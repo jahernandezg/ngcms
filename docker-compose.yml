@@ -1,0 +1,58 @@
+version: '3.9'
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cms
+    ports:
+      - '5433:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  backend:
+    build:
+      context: .
+      dockerfile: tools/docker/Dockerfile.backend
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # El contenedor db expone 5432 internamente; 5433 es el puerto del host.
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/cms?schema=public
+      NODE_ENV: production
+    ports:
+      - '3000:3000'
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  frontend:
+    build:
+      context: .
+      dockerfile: tools/docker/Dockerfile.frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      API_URL: http://backend:3000/api
+      NODE_ENV: production
+    ports:
+      - '4000:4000'
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:4000/ || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+volumes:
+  db-data:

@@ -1,0 +1,25 @@
+# Backend Dockerfile (multi-stage)
+FROM node:20.16.0-alpine AS builder
+WORKDIR /workspace
+COPY package*.json ./
+RUN npm ci --no-audit --fund=false
+COPY . .
+# Build backend with Nx (outputs to dist/backend)
+RUN npx nx build backend
+
+FROM node:20.16.0-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+# curl for container healthcheck
+RUN apk add --no-cache curl
+# Copy built app
+COPY --from=builder /workspace/dist/backend ./
+# Install production deps based on generated package.json
+RUN npm ci --omit=dev --no-audit --fund=false
+# Prisma schema for client generation
+COPY --from=builder /workspace/prisma ./prisma
+# Generate Prisma Client
+RUN npx prisma generate --schema=/app/prisma/schema.prisma
+
+EXPOSE 3000
+CMD ["node","main.js"]

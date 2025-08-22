@@ -1,0 +1,193 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  slug      String   @unique
+  bio       String?
+  avatarUrl String?
+  posts     Post[]
+  pages     Page[]
+  passwordHash String
+  roles        String[] @default([])
+  adminLastLogin DateTime?
+  failedAttempts Int      @default(0)
+  lockedUntil    DateTime?
+  auditLogs      AuditLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([slug])
+}
+
+model Category {
+  id        String      @id @default(cuid())
+  name      String
+  slug      String      @unique
+  parent    Category?   @relation("CategoryToCategory", fields: [parentId], references: [id])
+  parentId  String?
+  children  Category[]  @relation("CategoryToCategory")
+  posts     PostCategory[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  @@index([slug])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  posts     PostTag[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([slug])
+}
+
+model Post {
+  id           String         @id @default(cuid())
+  title        String
+  slug         String         @unique
+  excerpt      String?
+  content      String
+  status       PostStatus     @default(DRAFT)
+  author       User           @relation(fields: [authorId], references: [id])
+  authorId     String
+  readingTime  Int
+  viewCount    Int            @default(0)
+  publishedAt  DateTime?
+  lastEditedBy String?
+  lastEditedAt DateTime?
+  version      Int            @default(1)
+  categories   PostCategory[]
+  tags         PostTag[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  @@index([slug])
+  @@index([status])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  user       User?    @relation(fields: [userId], references: [id])
+  userId     String?
+  action     String
+  resource   String
+  resourceId String
+  createdAt  DateTime @default(now())
+}
+
+model PostCategory {
+  post       Post     @relation(fields: [postId], references: [id])
+  postId     String
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+  @@id([postId, categoryId])
+}
+
+model PostTag {
+  post   Post @relation(fields: [postId], references: [id])
+  postId String
+  tag    Tag  @relation(fields: [tagId], references: [id])
+  tagId  String
+  @@id([postId, tagId])
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Page {
+  id             String      @id @default(cuid())
+  title          String
+  slug           String      @unique
+  content        String
+  excerpt        String?
+  status         PageStatus  @default(DRAFT)
+  isHomepage     Boolean     @default(false)
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+  featuredImage  String?
+  author         User        @relation(fields: [authorId], references: [id])
+  authorId       String
+  sortOrder      Int         @default(0)
+  templateId     String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  @@index([slug])
+  @@index([isHomepage])
+}
+
+model MenuItem {
+  id            String       @id @default(cuid())
+  title         String
+  url           String?
+  type          MenuItemType
+  targetId      String?
+  parent        MenuItem?    @relation("MenuItemParent", fields: [parentId], references: [id])
+  parentId      String?
+  children      MenuItem[]   @relation("MenuItemParent")
+  sortOrder     Int          @default(0)
+  isVisible     Boolean      @default(true)
+  openNewWindow Boolean      @default(false)
+  slug          String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  @@index([type])
+  @@index([parentId])
+  @@unique([parentId, slug])
+}
+
+model ThemeSettings {
+  id            String   @id @default(cuid())
+  name          String
+  isActive      Boolean  @default(false)
+  primaryColor  String   @default("#f9d923")
+  secondaryColor String  @default("#000000")
+  templatePath  String?
+  customCss     String?
+  settings      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([isActive])
+}
+
+model SiteSettings {
+  id              String   @id @default("default")
+  siteName        String   @default("CMS")
+  tagline         String?
+  defaultMetaDesc String?  @map("default_meta_desc")
+  logoUrl         String?
+  faviconUrl      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MenuItemType {
+  PAGE
+  POST
+  BLOG_INDEX
+  CATEGORY
+  EXTERNAL_LINK
+}

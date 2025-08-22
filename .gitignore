@@ -1,44 +1,57 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+### Consolidated .gitignore (Node / Nx / Angular / Nest / Prisma) ###
+node_modules/
+dist/
+build/
+tmp/
+temp/
+out-tsc/
+.nx/cache/
+.nx/workspace-data/
+coverage/
+*.tsbuildinfo
 
-# compiled output
-dist
-tmp
-out-tsc
-
-# dependencies
-node_modules
-
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
+# IDEs / Editors
+.idea/
 .vscode/*
+!.vscode/extensions.json
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
-!.vscode/extensions.json
-
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
 .DS_Store
 Thumbs.db
+.angular/
 
-.nx/cache
-.nx/workspace-data
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+
+# Prisma local artifacts
+prisma/dev.db*
+prisma/migrations/*/steps.json
+generated/prisma/
+
+# Generated OpenAPI / Types
+swagger.json
+libs/shared-types/src/lib/openapi-types.ts
+
+# Static build output (Angular SSR client assets)
+static/
+
+# Misc / swaps
+*.swp
+*.swo
+*.orig
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md

@@ -1,0 +1,184 @@
+import { PrismaClient, PostStatus } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
+
+// Local helpers (evitamos dependencias de path alias durante ts-node seed)
+function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 60);
+}
+
+function calcReadingTime(text: string): number {
+  const words = text.trim().split(/\s+/).length;
+  return Math.max(1, Math.round(words / 200));
+}
+
+const prisma = new PrismaClient();
+
+
+async function main() {
+  // Usuario admin único (creado si no existe) será autor de los posts demo
+  const adminName = 'Site Admin';
+  const adminSlug = slugify(adminName);
+  const adminPasswordHash = await bcrypt.hash('admin123', 10);
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: { name: adminName, slug: adminSlug, roles: ['ADMIN'] },
+    create: { name: adminName, email: 'admin@example.com', slug: adminSlug, passwordHash: adminPasswordHash, roles: ['ADMIN'] },
+  });
+
+  // Usuario AUTHOR demo
+  const authorName = 'Author Demo';
+  const authorSlug = slugify(authorName);
+  const authorPasswordHash = await bcrypt.hash('author123', 10);
+  const author = await prisma.user.upsert({
+    where: { email: 'author@example.com' },
+    update: { name: authorName, slug: authorSlug, roles: ['AUTHOR'] },
+    create: { name: authorName, email: 'author@example.com', slug: authorSlug, passwordHash: authorPasswordHash, roles: ['AUTHOR'] },
+  });
+
+  const catTech = await prisma.category.upsert({
+    where: { slug: 'technology' },
+    update: {},
+    create: { name: 'Technology', slug: 'technology' },
+  });
+  const catAngular = await prisma.category.upsert({
+    where: { slug: 'angular' },
+    update: {},
+    create: { name: 'Angular', slug: 'angular', parentId: catTech.id },
+  });
+
+  const tagNx = await prisma.tag.upsert({
+    where: { slug: 'nx' },
+    update: {},
+    create: { name: 'Nx', slug: 'nx' },
+  });
+  const tagNest = await prisma.tag.upsert({
+    where: { slug: 'nestjs' },
+    update: {},
+    create: { name: 'NestJS', slug: 'nestjs' },
+  });
+
+  const postsData = [
+    {
+      title: 'Bienvenido al CMS Blog con Angular 20 + NestJS',
+      excerpt: 'MVP de blog full-stack con Nx, Angular 20 y NestJS',
+      content: 'Contenido de ejemplo con suficiente longitud para calcular tiempo de lectura. '.repeat(20),
+      categories: [catAngular.id],
+      tags: [tagNx.id, tagNest.id],
+    },
+    {
+      title: 'Productividad con Nx en Monorepos TypeScript',
+      excerpt: 'Acelera builds y testing incremental con Nx.',
+      content: 'Nx permite orquestar tareas y cachear resultados de forma eficiente. '.repeat(25),
+      categories: [catTech.id],
+      tags: [tagNx.id],
+    },
+    {
+      title: 'Buenas prácticas en NestJS para APIs limpias',
+      excerpt: 'Estructura modular, servicios y DTOs para escalabilidad.',
+      content: 'NestJS aprovecha decoradores y DI para organizar código. '.repeat(30),
+      categories: [catTech.id],
+      tags: [tagNest.id],
+    },
+  ];
+
+  for (const p of postsData) {
+    const slug = slugify(p.title);
+    await prisma.post.upsert({
+      where: { slug },
+      update: {},
+      create: {
+        title: p.title,
+        slug,
+        excerpt: p.excerpt,
+        content: p.content,
+        status: PostStatus.PUBLISHED,
+        readingTime: calcReadingTime(p.content),
+  authorId: admin.id,
+        publishedAt: new Date(),
+        categories: { create: p.categories.map((cid) => ({ categoryId: cid })) },
+        tags: { create: p.tags.map((tid) => ({ tagId: tid })) },
+      },
+    });
+  }
+
+  // ThemeSettings default (medium) - no hay unique por name, así que buscamos primero
+  const existingTheme = await prisma.themeSettings.findFirst({ where: { name: 'medium' } });
+  if (existingTheme) {
+    await prisma.themeSettings.update({ where: { id: existingTheme.id }, data: { isActive: true, primaryColor: '#f9d923', secondaryColor: '#000000' } });
+  } else {
+    await prisma.themeSettings.create({ data: { name: 'medium', isActive: true, primaryColor: '#f9d923', secondaryColor: '#000000' } });
+  }
+
+  // Página About / Homepage inicial
+  await prisma.page.upsert({
+    where: { slug: 'about' },
+    update: { isHomepage: true, status: 'PUBLISHED' },
+    create: {
+      title: 'About Me',
+      slug: 'about',
+      content: 'Página About inicial. '.repeat(20),
+      excerpt: 'Página About inicial',
+      status: 'PUBLISHED',
+      isHomepage: true,
+      authorId: admin.id
+    }
+  });
+
+  // Crear un post draft del usuario AUTHOR (si no existe) para probar ownership
+  await prisma.post.upsert({
+    where: { slug: 'primer-draft-author' },
+    update: {},
+    create: {
+      title: 'Primer Draft del Author',
+      slug: 'primer-draft-author',
+      content: 'Contenido borrador creado por AUTHOR para pruebas de ownership. '.repeat(10),
+      status: PostStatus.DRAFT,
+      readingTime: 1,
+      authorId: author.id,
+    }
+  });
+
+  // Menu inicial (si está vacío) - Home, Blog, About y categoría Technology
+  const menuCount = await prisma.menuItem.count();
+  if (menuCount === 0) {
+    const homepage = await prisma.page.findFirst({ where: { isHomepage: true } });
+    const techCat = await prisma.category.findUnique({ where: { slug: 'technology' } });
+    let sort = 0;
+    // HOME (homepage)
+    if (homepage) {
+      await prisma.menuItem.create({ data: { title: 'Home', type: 'PAGE', targetId: homepage.id, sortOrder: sort++ } });
+    }
+    // Blog index (listado de posts)
+    await prisma.menuItem.create({ data: { title: 'Blog', type: 'BLOG_INDEX', sortOrder: sort++ } });
+    // About page (si distinta de homepage)
+    if (homepage && homepage.slug !== 'about') {
+      const aboutPage = await prisma.page.findUnique({ where: { slug: 'about' } });
+      if (aboutPage) await prisma.menuItem.create({ data: { title: 'About', type: 'PAGE', targetId: aboutPage.id, sortOrder: sort++ } });
+    } else if (homepage && homepage.slug === 'about') {
+      // homepage es About, ya representada por Home; omitimos extra
+    }
+    // Technology category
+    if (techCat) {
+      await prisma.menuItem.create({ data: { title: 'Technology', type: 'CATEGORY', targetId: techCat.id, sortOrder: sort++ } });
+    }
+    // External link ejemplo
+    await prisma.menuItem.create({ data: { title: 'GitHub', type: 'EXTERNAL_LINK', url: 'https://github.com/', openNewWindow: true, sortOrder: sort++ } });
+  }
+
+  console.warn('Seed completada. (incluye menú inicial si estaba vacío)');
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
