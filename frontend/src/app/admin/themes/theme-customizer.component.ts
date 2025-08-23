@@ -7,6 +7,12 @@ import { debounceTime, takeUntil } from 'rxjs/operators';
 import { ThemeService, ActiveTheme } from '../../shared/theme.service';
 import { ColorPickerComponent } from './components/color-picker.component';
 import { FontSelectorComponent } from './components/font-selector.component';
+import { BrandIntegrationComponent } from './components/brand-integration.component';
+import { AnimationConfiguratorComponent } from './components/animation-configurator.component';
+import { ThemeExportComponent } from './components/theme-export.component';
+import { ThemeMarketplaceComponent } from './components/theme-marketplace.component';
+import { ColorPalette, ExtractedBrand } from '../../shared/brand-color-extractor.service';
+import { ThemeAnimations } from '../../shared/animation-engine.service';
 
 // Extended theme interface for customization
 interface CustomizableTheme extends ActiveTheme {
@@ -31,7 +37,7 @@ const THEME_CATEGORIES = [
 @Component({
   standalone: true,
   selector: 'app-theme-customizer',
-  imports: [CommonModule, FormsModule, ColorPickerComponent, FontSelectorComponent],
+  imports: [CommonModule, FormsModule, ColorPickerComponent, FontSelectorComponent, BrandIntegrationComponent, AnimationConfiguratorComponent, ThemeExportComponent, ThemeMarketplaceComponent],
   template: `
     <div class="theme-customizer-container" [class.preview-mode]="previewMode()">
       
@@ -84,6 +90,14 @@ const THEME_CATEGORIES = [
                   ⚡ Load Defaults
                 </button>
               </div>
+            </section>
+
+            <!-- Brand Integration Section -->
+            <section class="customizer-section brand-section">
+              <app-brand-integration
+                (paletteApplied)="onBrandPaletteApplied($event)"
+                (brandSaved)="onBrandSaved($event)">
+              </app-brand-integration>
             </section>
 
             <!-- Colors Section -->
@@ -285,6 +299,28 @@ const THEME_CATEGORIES = [
                   </div>
                 </div>
               </div>
+            </section>
+
+            <!-- Animations Section -->
+            <section class="customizer-section animations-section">
+              <app-animation-configurator
+                (animationsChanged)="onAnimationsChanged($event)"
+                (animationsApplied)="onAnimationsApplied($event)">
+              </app-animation-configurator>
+            </section>
+
+            <!-- Theme Export Section -->
+            <section class="customizer-section export-section">
+              <app-theme-export
+                [theme]="workingThemeSignal">
+              </app-theme-export>
+            </section>
+
+            <!-- Theme Marketplace Section -->
+            <section class="customizer-section marketplace-section">
+              <app-theme-marketplace
+                (themeInstalled)="onMarketplaceThemeInstalled($event)">
+              </app-theme-marketplace>
             </section>
 
           </div>
@@ -846,6 +882,49 @@ const THEME_CATEGORIES = [
         border-bottom: 1px solid var(--theme-border);
       }
     }
+
+    /* Brand Integration Section */
+    .brand-section {
+      margin-bottom: 2rem;
+    }
+
+    /* Animations Section */
+    .animations-section {
+      margin-bottom: 2rem;
+    }
+
+    /* Export Section */
+    .export-section {
+      margin-bottom: 2rem;
+    }
+
+    /* Marketplace Section */
+    .marketplace-section {
+      margin-bottom: 2rem;
+    }
+
+    /* Toast animations */
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
   `]
 })
 export class ThemeCustomizerComponent implements OnInit, OnDestroy {
@@ -860,6 +939,9 @@ export class ThemeCustomizerComponent implements OnInit, OnDestroy {
   previewMode = signal(false);
   currentDevice = signal('desktop');
   availableThemes = signal<ActiveTheme[]>([]);
+  
+  // Computed signal for working theme (for export component)
+  workingThemeSignal = computed(() => this.workingTheme as ActiveTheme);
 
   // Working theme data
   workingTheme: CustomizableTheme = this.getDefaultTheme();
@@ -985,6 +1067,85 @@ export class ThemeCustomizerComponent implements OnInit, OnDestroy {
   onBodyFontChange(font: { name: string; category: string }) {
     this.workingTheme.fontBody = font.name;
     this.onTypographyChange();
+  }
+
+  onBrandPaletteApplied(palette: ColorPalette) {
+    // Apply extracted colors to theme
+    this.workingTheme.primaryColor = palette.primary;
+    this.workingTheme.secondaryColor = palette.secondary;
+    this.workingTheme.accentColor = palette.accent;
+    this.workingTheme.backgroundColor = palette.background;
+    this.workingTheme.surfaceColor = palette.surface;
+    
+    // Trigger preview update
+    this.onColorChange();
+    
+    // Show success message
+    this.showSuccessMessage('¡Paleta de marca aplicada exitosamente!');
+  }
+
+  onBrandSaved(brand: ExtractedBrand) {
+    // Save brand information (could be stored in local storage or sent to backend)
+    localStorage.setItem('savedBrand', JSON.stringify(brand));
+    
+    // Update theme name if provided
+    if (brand.suggestedThemeName) {
+      this.workingTheme.name = brand.suggestedThemeName;
+    }
+    
+    this.showSuccessMessage('¡Marca guardada exitosamente!');
+  }
+
+  private showSuccessMessage(message: string) {
+    // Simple toast notification - could be replaced with a proper toast service
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #22c55e;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 10000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      animation: slideIn 0.3s ease;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.animation = 'slideOut 0.3s ease forwards';
+      setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
+  }
+
+  onAnimationsChanged(animations: ThemeAnimations) {
+    // Store animations configuration for later use
+    localStorage.setItem('tempAnimations', JSON.stringify(animations));
+  }
+
+  onAnimationsApplied(animations: ThemeAnimations) {
+    // Apply animations to the working theme
+    // Since animations are managed separately, we just show success
+    this.showSuccessMessage('¡Configuración de animaciones aplicada!');
+    
+    // You could extend the theme model to include animations if needed
+    // this.workingTheme.animations = animations;
+  }
+
+  onMarketplaceThemeInstalled(theme: ActiveTheme) {
+    // Apply the marketplace theme as the working theme
+    this.workingTheme = { ...theme, isPreview: true };
+    this.triggerPreviewUpdate();
+    
+    // Show success message
+    this.showSuccessMessage(`¡Tema "${theme.name}" aplicado exitosamente!`);
+    
+    // Optionally save it to the backend
+    // this.saveTheme();
   }
 
   onLayoutChange() {
