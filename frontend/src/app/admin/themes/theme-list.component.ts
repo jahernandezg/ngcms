@@ -16,7 +16,12 @@ interface AdminTheme { id: string; name: string; primaryColor?: string | null; s
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-semibold">Temas</h1>
-      <button class="btn btn-sm" (click)="reload()" [disabled]="loading()">Recargar</button>
+      <div class="flex gap-2">
+        <a href="/admin/themes/customize" class="btn btn-sm bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+          🎨 Visual Customizer
+        </a>
+        <button class="btn btn-sm" (click)="reload()" [disabled]="loading()">Recargar</button>
+      </div>
     </div>
 
   <details class="border rounded p-3 bg-white/70 dark:bg-gray-800/70 border-gray-300 dark:border-gray-600 transition-colors">

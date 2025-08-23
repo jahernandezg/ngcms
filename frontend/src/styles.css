@@ -1,0 +1,52 @@
+/* Global Styles */
+@import './assets/styles/theme-variables.css';
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--theme-font-body);
+  color: var(--theme-text);
+  background-color: var(--theme-surface);
+  transition: background-color var(--theme-animation-speed) var(--theme-animation-easing);
+}
+
+/* Apply theme variables to common elements */
+a {
+  color: var(--theme-primary);
+  text-decoration: none;
+  transition: color var(--theme-animation-speed) var(--theme-animation-easing);
+}
+
+a:hover {
+  color: var(--theme-accent);
+}
+
+/* Button base styles - can be overridden by component-specific styles */
+button {
+  font-family: var(--theme-font-body);
+}
+
+/* Form elements */
+input, textarea, select {
+  font-family: var(--theme-font-body);
+}
+
+/* Ensure proper inheritance */
+.theme-aware {
+  color: var(--theme-text);
+  background-color: var(--theme-surface);
+}
+
+/* Theme transition for smooth changes */
+.theme-transition * {
+  transition: 
+    background-color var(--theme-animation-speed) var(--theme-animation-easing),
+    color var(--theme-animation-speed) var(--theme-animation-easing),
+    border-color var(--theme-animation-speed) var(--theme-animation-easing);
+}
