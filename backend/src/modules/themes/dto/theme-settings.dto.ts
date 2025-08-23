@@ -1,5 +1,13 @@
 import { IsOptional, IsString, IsNumber, IsEnum, IsBoolean, MinLength, MaxLength } from 'class-validator';
-import { ThemeCategory, HeaderStyle, FooterStyle, ButtonStyle, CardStyle, ShadowStyle } from '@prisma/client';
+// Import theme enums from local definitions
+import { 
+  ThemeCategory, 
+  HeaderStyle, 
+  FooterStyle, 
+  ButtonStyle, 
+  CardStyle, 
+  ShadowStyle 
+} from '../enums/theme.enums';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateThemeDto {

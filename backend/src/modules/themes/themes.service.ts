@@ -1,6 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@cms-workspace/database';
-import { Prisma, ThemeCategory, HeaderStyle, FooterStyle, ButtonStyle, CardStyle, ShadowStyle } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { 
+  ThemeCategory, 
+  HeaderStyle, 
+  FooterStyle, 
+  ButtonStyle, 
+  CardStyle, 
+  ShadowStyle 
+} from './enums/theme.enums';
 import { CreateThemeDto, UpdateThemeDto } from './dto/theme-settings.dto';
 
 @Injectable()

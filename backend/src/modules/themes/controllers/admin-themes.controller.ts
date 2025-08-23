@@ -5,7 +5,7 @@ import { CreateThemeDto, UpdateThemeDto } from '../dto/theme-settings.dto';
 import { JwtAuthGuard } from '../../admin/guards/jwt-auth.guard';
 import { RolesGuard } from '../../admin/guards/roles.guard';
 import { Roles } from '../../admin/decorators/roles.decorator';
-import { ThemeCategory } from '@prisma/client';
+import { ThemeCategory } from '../enums/theme.enums';
 
 @ApiTags('Admin Themes')
 @ApiBearerAuth()
