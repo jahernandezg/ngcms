@@ -90,14 +90,14 @@ async function main() {
     const homepage = await prisma.page.findFirst({ where: { isHomepage: true } });
     const techCat = await prisma.category.findUnique({ where: { slug: 'technology' } });
     let sort = 0;
-    if (homepage) await prisma.menuItem.create({ data: { title: 'Home', type: 'PAGE', targetId: homepage.id, sortOrder: sort++ } });
-    await prisma.menuItem.create({ data: { title: 'Blog', type: 'BLOG_INDEX', sortOrder: sort++ } });
+    if (homepage) await prisma.menuItem.create({ data: { title: 'Home', slug: slugify('Home'), type: 'PAGE', targetId: homepage.id, sortOrder: sort++ } });
+    await prisma.menuItem.create({ data: { title: 'Blog', slug: slugify('Blog'), type: 'BLOG_INDEX', sortOrder: sort++ } });
     if (homepage && homepage.slug !== 'about') {
       const aboutPage = await prisma.page.findUnique({ where: { slug: 'about' } });
-      if (aboutPage) await prisma.menuItem.create({ data: { title: 'About', type: 'PAGE', targetId: aboutPage.id, sortOrder: sort++ } });
+      if (aboutPage) await prisma.menuItem.create({ data: { title: 'About', slug: slugify('About'), type: 'PAGE', targetId: aboutPage.id, sortOrder: sort++ } });
     }
-    if (techCat) await prisma.menuItem.create({ data: { title: 'Technology', type: 'CATEGORY', targetId: techCat.id, sortOrder: sort++ } });
-    await prisma.menuItem.create({ data: { title: 'GitHub', type: 'EXTERNAL_LINK', url: 'https://github.com/', openNewWindow: true, sortOrder: sort++ } });
+    if (techCat) await prisma.menuItem.create({ data: { title: 'Technology', slug: slugify('Technology'), type: 'CATEGORY', targetId: techCat.id, sortOrder: sort++ } });
+    await prisma.menuItem.create({ data: { title: 'GitHub', slug: slugify('GitHub'), type: 'EXTERNAL_LINK', url: 'https://github.com/', openNewWindow: true, sortOrder: sort++ } });
   }
   // Site Settings default
   await prisma.siteSettings.upsert({
