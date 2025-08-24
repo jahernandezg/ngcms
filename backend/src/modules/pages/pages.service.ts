@@ -36,7 +36,8 @@ export class PagesService {
   }
 
   // Si el contenido es un bloque de código Quill conteniendo HTML escapado, lo desenvuelve.
-  private unwrapQuillPre(content: string) {
+  private unwrapQuillPre(content?: string | null) {
+    if (!content) return '';
     const m = content.match(/^<pre[^>]*class="ql-syntax"[^>]*>([\s\S]*?)<\/pre>$/);
     if (m) {
       const inner = m[1];

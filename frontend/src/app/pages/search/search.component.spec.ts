@@ -2,8 +2,20 @@ import { TestBed } from '@angular/core/testing';
 import { SearchComponent, SEARCH_DEBOUNCE_MS } from './search.component';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { provideHttpClient, HttpClient } from '@angular/common/http';
+import { provideHttpClient, HttpClient, HttpParams } from '@angular/common/http';
 import { of } from 'rxjs';
+
+type AllowedParams = HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]>;
+
+function getParam(opts: { params?: AllowedParams } | undefined, key: string): string | null {
+  const p = opts?.params;
+  if (!p) return null;
+  if (p instanceof HttpParams) return p.get(key);
+  const v = p[key];
+  if (v == null) return null;
+  if (Array.isArray(v)) return v.length ? String(v[0]) : null;
+  return String(v);
+}
 
 class RouterStub { 
   constructor(private updateQuery: (qp: Record<string, string | number | undefined | null>) => void) {}
@@ -56,13 +68,13 @@ describe('SearchComponent', () => {
   });
 
   it('sincroniza query params y realiza búsqueda + sugerencias', async () => {
-  const getSpy = jest.spyOn(http, 'get').mockImplementation((url: string, opts?: { [key: string]: any }) => {
-      const q = opts?.["params"]?.get?.('q');
+  const getSpy = jest.spyOn(http, 'get').mockImplementation((url: string, opts?: { params?: AllowedParams } & Record<string, unknown>) => {
+      const q = getParam(opts, 'q');
       if (url.includes('/api/search/suggest')) {
         return of({ titles: q ? [q + 'X'] : [], tags: [] });
       }
   if (url === '/api/search') {
-        const page = opts?.["params"]?.get?.('page') || '1';
+        const page = getParam(opts, 'page') || '1';
         return of({ success: true, message: 'ok', data: q ? [{ id: '1', title: q, slug: 's', readingTime: 1, author: { id: 'a', name: 'Autor' }, categories: [] }] : [], meta: { total: q?1:0, page: Number(page), limit: 10, totalPages: 2, q } });
       }
       return of({});
@@ -83,13 +95,13 @@ describe('SearchComponent', () => {
   });
 
   it('paginación next/prev', async () => {
-  const getSpy = jest.spyOn(http, 'get').mockImplementation((url: string, opts?: { [key: string]: any }) => {
-      const q = opts?.["params"]?.get?.('q');
+  const getSpy = jest.spyOn(http, 'get').mockImplementation((url: string, opts?: { params?: AllowedParams } & Record<string, unknown>) => {
+      const q = getParam(opts, 'q');
       if (url.includes('/api/search/suggest')) {
         return of({ titles: q ? [q + 'X'] : [], tags: [] });
       }
   if (url === '/api/search') {
-        const page = opts?.["params"]?.get?.('page') || '1';
+        const page = getParam(opts, 'page') || '1';
         return of({ success: true, message: 'ok', data: q ? [{ id: '1', title: q, slug: 's', readingTime: 1, author: { id: 'a', name: 'Autor' }, categories: [] }] : [], meta: { total: q?1:0, page: Number(page), limit: 10, totalPages: 3, q } });
       }
       return of({});

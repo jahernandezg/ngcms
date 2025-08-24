@@ -95,10 +95,32 @@ export class PostEditorComponent {
   load() {
     this.http.get<ApiResponse<PostEntity>>(`/api/admin/posts/${this.id()}`).subscribe(r => {
       if (r.success) {
-        const p = r.data;
+        const p = r.data as PostEntity;
         this.form.patchValue({ title: p.title, excerpt: p.excerpt || '', content: p.content });
-        this.selectedCategories.set((p.categories||[]).map(c=>c.slug));
-        this.selectedTags.set((p.tags||[]).map(t=>t.slug));
+        const hasSlug = (x: unknown): x is { slug: string } => {
+          const obj = x as Record<string, unknown>;
+          return typeof obj['slug'] === 'string';
+        };
+        const hasCategorySlug = (x: unknown): x is { category: { slug: string } } => {
+          const obj = x as Record<string, unknown>;
+          const cat = obj['category'] as Record<string, unknown> | undefined;
+          return typeof cat?.['slug'] === 'string';
+        };
+        const hasTagSlug = (x: unknown): x is { tag: { slug: string } } => {
+          const obj = x as Record<string, unknown>;
+          const tag = obj['tag'] as Record<string, unknown> | undefined;
+          return typeof tag?.['slug'] === 'string';
+        };
+        const catsAny = (p as unknown as Record<string, unknown>)['categories'] as unknown[] | undefined;
+        const tagsAny = (p as unknown as Record<string, unknown>)['tags'] as unknown[] | undefined;
+        const catSlugs = (catsAny || [])
+          .map((c) => (hasSlug(c) ? c.slug : (hasCategorySlug(c) ? c.category.slug : undefined)))
+          .filter((s): s is string => typeof s === 'string' && !!s);
+        const tagSlugs = (tagsAny || [])
+          .map((t) => (hasSlug(t) ? t.slug : (hasTagSlug(t) ? t.tag.slug : undefined)))
+          .filter((s): s is string => typeof s === 'string' && !!s);
+        this.selectedCategories.set(catSlugs);
+        this.selectedTags.set(tagSlugs);
       }
       this.loadTaxonomy();
     });

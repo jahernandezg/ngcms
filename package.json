@@ -8,7 +8,7 @@
     "start:backend": "nx serve backend",
     "build:backend": "nx build backend",
     "test": "nx test",
-    "test:ci": "nx run-many -t test --coverage",
+  "test:ci": "nx run-many -t test",
     "test:coverage": "nx run-many -t test --coverage",
     "lint": "nx lint",
     "e2e": "nx e2e frontend-e2e",

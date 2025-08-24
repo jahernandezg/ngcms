@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { unwrapData } from './http-utils';
 
 export interface SiteSettingsPublic {
   siteName: string;
@@ -21,8 +22,11 @@ export class SiteSettingsService {
   load() {
     if (this.fetched || this.loading()) return; // evita duplicados
     this.loadingSig.set(true);
-    this.http.get<SiteSettingsPublic>('/api/site-settings/public').subscribe({
-      next: (s) => { this.settingsSig.set(s); this.fetched = true; this.loadingSig.set(false); },
+    this.http.get<unknown>('/api/site-settings/public').subscribe({
+      next: (s) => { 
+        const data = unwrapData<SiteSettingsPublic>(s as unknown as { data: SiteSettingsPublic } | SiteSettingsPublic);
+        this.settingsSig.set(data); this.fetched = true; this.loadingSig.set(false); 
+      },
       error: () => { this.loadingSig.set(false); }
     });
   }

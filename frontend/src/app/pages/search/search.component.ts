@@ -3,6 +3,7 @@ import { Component, computed, effect, inject, signal, InjectionToken } from '@an
 import { SeoService } from '../../shared/seo.service';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
+import { unwrapData } from '../../shared/http-utils';
 import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap, filter } from 'rxjs/operators';
 import { combineLatest } from 'rxjs';
@@ -35,16 +36,16 @@ export const SEARCH_DEBOUNCE_MS = new InjectionToken<number>('SEARCH_DEBOUNCE_MS
     <section class="container mx-auto p-4">
       <h1 class="text-2xl font-semibold mb-4">Buscar</h1>
       <input class="border p-2 w-full mb-4" placeholder="Buscar..." [value]="q()" (input)="onInput($event)"/>
-      <div class="text-sm text-gray-500 mb-2" *ngIf="suggestions()?.titles?.length">Sugerencias: 
+  <div class="text-sm text-text-secondary mb-2" *ngIf="suggestions()?.titles?.length">Sugerencias: 
         <button *ngFor="let s of suggestions()?.titles" class="mr-2 underline" (click)="setQ(s)" [innerHTML]="highlight(s)"></button>
         <span *ngFor="let t of suggestions()?.tags" class="ml-2"><a [routerLink]="['/tag', t.slug]" class="underline">#{{ t.name }}</a></span>
       </div>
       <ng-container *ngIf="posts(); else loadingTpl">
         <p *ngIf="posts().length === 0">Sin resultados para "{{ q() }}".</p>
         <article *ngFor="let p of posts()" class="py-4 border-b">
-          <h2 class="text-xl font-medium"><a [routerLink]="['/post', p.slug]" class="text-blue-600 underline" [innerHTML]="highlight(p.title)"></a></h2>
-          <p class="text-gray-600" [innerHTML]="highlight(p.excerpt || '')"></p>
-          <small class="text-gray-500">Por {{ p.author.name }} · {{ p.readingTime }} min</small>
+          <h2 class="text-xl font-medium"><a [routerLink]="['/post', p.slug]" class="text-primary underline" [innerHTML]="highlight(p.title)"></a></h2>
+          <p class="text-text-secondary" [innerHTML]="highlight(p.excerpt || '')"></p>
+          <small class="text-text-secondary">Por {{ p.author.name }} · {{ p.readingTime }} min</small>
         </article>
         <nav class="flex gap-2 mt-4" *ngIf="totalPages() > 1">
           <button class="px-3 py-1 border rounded" [disabled]="page() === 1" (click)="prev()">Anterior</button>
@@ -99,20 +100,24 @@ export class SearchComponent {
     )
   );
 
-  readonly response = toSignal<ApiListResponse<PostListItem> | undefined>(
+  readonly response = toSignal<(ApiListResponse<PostListItem> | PostListItem[]) | undefined>(
     combineLatest([this.q$, this.page$]).pipe(
       switchMap(([q, p]) =>
-  this.http.get<ApiListResponse<PostListItem>>('/api/search', {
+  this.http.get<ApiListResponse<PostListItem> | PostListItem[]>('/api/search', {
           params: new HttpParams().set('q', q).set('page', String(p)).set('limit', String(this.limit)),
         })
       )
     )
   );
 
-  readonly posts = computed(() => this.response()?.data ?? []);
-  readonly meta = computed(
-    () => this.response()?.meta ?? { total: 0, page: 1, limit: this.limit, totalPages: 1, q: this.q() }
-  );
+  readonly posts = computed(() => {
+    const r = this.response();
+    return r ? unwrapData<PostListItem[]>(r as ApiListResponse<PostListItem> | PostListItem[]) : [];
+  });
+  readonly meta = computed(() => {
+    const r = this.response() as ApiListResponse<PostListItem> | undefined;
+    return r?.meta ?? { total: 0, page: 1, limit: this.limit, totalPages: 1, q: this.q() };
+  });
   readonly totalPages = computed(() => this.meta().totalPages ?? 1);
 
   next() {

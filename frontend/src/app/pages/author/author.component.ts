@@ -20,9 +20,9 @@ interface ApiList<T> { success: boolean; message: string; data: T[]; meta: { tot
       <h1 class="text-2xl font-semibold mb-4">Autor: {{ authorId() }}</h1>
       <ng-container *ngIf="posts(); else loadingTpl">
         <article *ngFor="let p of posts()" class="py-4 border-b">
-          <h2 class="text-xl font-medium"><a [routerLink]="['/post', p.slug]" class="text-blue-600 underline">{{ p.title }}</a></h2>
-          <p class="text-gray-600" *ngIf="p.excerpt">{{ p.excerpt }}</p>
-          <small class="text-gray-500">{{ p.readingTime }} min · {{ p.publishedAt | date:'mediumDate' }}</small>
+          <h2 class="text-xl font-medium"><a [routerLink]="['/post', p.slug]" class="text-primary underline">{{ p.title }}</a></h2>
+          <p class="text-text-secondary" *ngIf="p.excerpt">{{ p.excerpt }}</p>
+          <small class="text-text-secondary">{{ p.readingTime }} min · {{ p.publishedAt | date:'mediumDate' }}</small>
         </article>
         <nav class="flex gap-2 mt-4" *ngIf="totalPages() > 1">
           <button class="px-3 py-1 border rounded" [disabled]="page() === 1" (click)="prev()">Anterior</button>

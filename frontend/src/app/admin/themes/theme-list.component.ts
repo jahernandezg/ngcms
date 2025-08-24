@@ -16,7 +16,12 @@ interface AdminTheme { id: string; name: string; primaryColor?: string | null; s
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-semibold">Temas</h1>
-      <button class="btn btn-sm" (click)="reload()" [disabled]="loading()">Recargar</button>
+      <div class="flex gap-2">
+        <a href="/admin/themes/customize" class="btn btn-sm bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+          🎨 Visual Customizer
+        </a>
+        <button class="btn btn-sm" (click)="reload()" [disabled]="loading()">Recargar</button>
+      </div>
     </div>
 
   <details class="border rounded p-3 bg-white/70 dark:bg-gray-800/70 border-gray-300 dark:border-gray-600 transition-colors">
@@ -178,8 +183,13 @@ export class ThemeListComponent implements OnInit {
   activate(t: AdminTheme) {
     if (this.activatingId()) return;
     this.activatingId.set(t.id);
-  this.http.put<Envelope<unknown>>(`/api/admin/themes/${t.id}/active`, {}).subscribe({
-      next: () => { this.activatingId.set(null); this.reload(); },
+  this.http.put<Envelope<unknown>>(`/api/admin/themes/${t.id}/activate`, {}).subscribe({
+      next: () => { 
+        this.activatingId.set(null); 
+        this.reload(); 
+        // Señal para refrescar tema activo en público
+  try { localStorage.setItem('themeUpdated', String(Date.now())); } catch { /* noop */ }
+      },
       error: () => { this.activatingId.set(null); }
     });
   }

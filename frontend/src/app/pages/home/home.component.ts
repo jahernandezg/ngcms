@@ -7,6 +7,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { skip } from 'rxjs/operators';
 import { HomeDataService } from './home-data.service';
 import { HttpClient } from '@angular/common/http';
+import { unwrapData } from '../../shared/http-utils';
 
 @Component({
   selector: 'app-home',
@@ -23,18 +24,18 @@ import { HttpClient } from '@angular/common/http';
         <h1 class="text-2xl font-semibold mb-4">Últimos posts</h1>
         <ng-container *ngIf="!svc.loading(); else loadingTpl">
           <article *ngFor="let p of svc.items()" class="py-4 border-b">
-            <h2 class="text-xl font-medium"><a [routerLink]="['/post', p.slug]" class="text-blue-600 underline">{{ p.title }}</a></h2>
-            <p class="text-gray-600">{{ p.excerpt }}</p>
+            <h2 class="text-xl font-medium"><a [routerLink]="['/post', p.slug]" class="text-primary underline">{{ p.title }}</a></h2>
+            <p class="text-text-secondary">{{ p.excerpt }}</p>
             <div class="flex flex-wrap gap-2 my-2" *ngIf="p.categories as cats">
               <a *ngFor="let c of cats" [routerLink]="['/category', c.slug]" class="text-xs px-2 py-1 bg-gray-100 rounded">#{{ c.name }}</a>
             </div>
             <div class="flex flex-wrap gap-2 my-2" *ngIf="p.tags?.length">
-              <a *ngFor="let t of p.tags" [routerLink]="['/tag', t.slug]" class="text-xs px-2 py-1 bg-blue-50 rounded">{{ t.name }}</a>
+              <a *ngFor="let t of p.tags" [routerLink]="['/tag', t.slug]" class="text-xs px-2 py-1 border border-border-app rounded text-text-secondary">{{ t.name }}</a>
             </div>
-            <small class="text-gray-500">Por {{ p.author.name }} · {{ p.readingTime }} min</small>
+            <small class="text-text-secondary">Por {{ p.author.name }} · {{ p.readingTime }} min</small>
           </article>
           @if(!svc.loading() && !svc.error() && svc.items().length === 0){
-            <p class="text-gray-500">No hay posts publicados todavía.</p>
+            <p class="text-text-secondary">No hay posts publicados todavía.</p>
           }
           <nav class="flex gap-2 mt-4">
             <button class="px-3 py-1 border rounded" [disabled]="svc.page() === 1 || svc.loading()" (click)="svc.prev()">Anterior</button>
@@ -97,15 +98,16 @@ export class HomeComponent implements OnInit {
   }
 
   private tryLoadHomepageOrBlogFallback() {
-    this.http.get<Envelope<PageDetail | null>>('/api/pages/homepage').subscribe({
+  this.http.get<unknown>('/api/pages/homepage').subscribe({
       next: (res) => {
-        if (res?.data) {
-          this.homepage.set(res.data);
+    const data = unwrapData<PageDetail | null>(res as unknown as { data: PageDetail | null } | PageDetail | null);
+        if (data) {
+          this.homepage.set(data);
           this.homepageLoaded = true;
-          const seo = res.data.seo || {};
+          const seo = data.seo || {};
           this.seo.set({
-            title: seo.title || res.data.title,
-            description: seo.description || res.data.excerpt || 'Página de inicio',
+            title: seo.title || data.title,
+            description: seo.description || data.excerpt || 'Página de inicio',
             canonical: '/',
           });
         } else {
@@ -131,4 +133,4 @@ interface PageDetail {
   excerpt?: string | null;
   seo?: { title?: string; description?: string; canonical?: string; keywords?: string };
 }
-interface Envelope<T> { success: boolean; data: T; }
+// Envelope tipado se maneja vía unwrapData

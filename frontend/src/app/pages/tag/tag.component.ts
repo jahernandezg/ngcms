@@ -6,6 +6,7 @@ import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 import { map, switchMap } from 'rxjs/operators';
 import { combineLatest } from 'rxjs';
 import { SeoService } from '../../shared/seo.service';
+import { unwrapData } from '../../shared/http-utils';
 
  type PostListItem = {
   id: string;
@@ -34,9 +35,9 @@ import { SeoService } from '../../shared/seo.service';
       <h1 class="text-2xl font-semibold mb-4">Tag: {{ slug() }}</h1>
       <ng-container *ngIf="posts(); else loadingTpl">
         <article *ngFor="let p of posts()" class="py-4 border-b">
-          <h2 class="text-xl font-medium"><a [routerLink]="['/post', p.slug]" class="text-blue-600 underline">{{ p.title }}</a></h2>
-          <p class="text-gray-600">{{ p.excerpt }}</p>
-          <small class="text-gray-500">Por {{ p.author.name }} · {{ p.readingTime }} min</small>
+          <h2 class="text-xl font-medium"><a [routerLink]="['/post', p.slug]" class="text-primary underline">{{ p.title }}</a></h2>
+          <p class="text-text-secondary">{{ p.excerpt }}</p>
+          <small class="text-text-secondary">Por {{ p.author.name }} · {{ p.readingTime }} min</small>
         </article>
         <nav class="flex gap-2 mt-4">
           <button class="px-3 py-1 border rounded" [disabled]="page() === 1" (click)="prev()">Anterior</button>
@@ -62,20 +63,24 @@ export class TagComponent {
   private readonly page$ = toObservable(this.page);
   private readonly slug$ = this.route.paramMap.pipe(map((m) => m.get('slug') || ''));
 
-  readonly response = toSignal<ApiListResponse<PostListItem> | undefined>(
+  readonly response = toSignal<(ApiListResponse<PostListItem> | PostListItem[]) | undefined>(
   combineLatest([this.slug$, this.page$]).pipe(
       switchMap(([slug, p]) =>
-  this.http.get<ApiListResponse<PostListItem>>(`/api/tag/${slug}`, {
+  this.http.get<ApiListResponse<PostListItem> | PostListItem[]>(`/api/tag/${slug}`, {
           params: new HttpParams().set('page', String(p)).set('limit', String(this.limit)),
         })
       )
     )
   );
 
-  readonly posts = computed(() => this.response()?.data ?? []);
-  readonly meta = computed(
-    () => this.response()?.meta ?? { total: 0, page: 1, limit: this.limit, totalPages: 1, tag: this.slug() }
-  );
+  readonly posts = computed(() => {
+    const r = this.response();
+    return r ? unwrapData<PostListItem[]>(r as ApiListResponse<PostListItem> | PostListItem[]) : [];
+  });
+  readonly meta = computed(() => {
+    const r = this.response() as ApiListResponse<PostListItem> | undefined;
+    return r?.meta ?? { total: 0, page: 1, limit: this.limit, totalPages: 1, tag: this.slug() };
+  });
   readonly totalPages = computed(() => this.meta().totalPages ?? 1);
 
   next() {

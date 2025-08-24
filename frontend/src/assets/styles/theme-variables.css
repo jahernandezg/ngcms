@@ -1,0 +1,209 @@
+/**
+ * Theme Variables System - CSS Custom Properties
+ * This file defines the base CSS custom properties that can be dynamically
+ * updated by the ThemeService based on the active theme settings.
+ */
+
+[data-theme-scope] {
+  /* Color System */
+  --theme-primary: #2563eb;
+  --theme-secondary: #64748b;
+  --theme-accent: #f59e0b;
+  --theme-surface: #ffffff;
+  --theme-surface-alt: #f8fafc;
+  --theme-text: #1e293b;
+  --theme-text-secondary: #64748b;
+  --theme-border: #e2e8f0;
+  --theme-error: #dc2626;
+  --theme-success: #16a34a;
+  --theme-warning: #d97706;
+
+  /* Tailwind alias tokens (compatibilidad con bg-bg-app, text-text-app, etc.) */
+  --color-primary: var(--theme-primary);
+  --color-secondary: var(--theme-secondary);
+  --color-accent: var(--theme-accent);
+  --color-bg: var(--theme-surface);
+  --color-surface: var(--theme-surface);
+  --color-surface-alt: var(--theme-surface-alt);
+  --color-text: var(--theme-text);
+  --color-text-secondary: var(--theme-text-secondary);
+  --color-border: var(--theme-border);
+  
+  /* Typography System */
+  --theme-font-heading: 'Inter', sans-serif;
+  --theme-font-body: 'Inter', sans-serif;
+  --theme-font-size-base: 16px;
+  --theme-font-scale-ratio: 1.25;
+  --theme-line-height-base: 1.6;
+  --theme-letter-spacing: normal;
+  
+  /* Computed Typography Scale */
+  --theme-text-xs: calc(var(--theme-font-size-base) / var(--theme-font-scale-ratio) / var(--theme-font-scale-ratio));
+  --theme-text-sm: calc(var(--theme-font-size-base) / var(--theme-font-scale-ratio));
+  --theme-text-base: var(--theme-font-size-base);
+  --theme-text-lg: calc(var(--theme-font-size-base) * var(--theme-font-scale-ratio));
+  --theme-text-xl: calc(var(--theme-font-size-base) * var(--theme-font-scale-ratio) * var(--theme-font-scale-ratio));
+  --theme-text-2xl: calc(var(--theme-font-size-base) * var(--theme-font-scale-ratio) * var(--theme-font-scale-ratio) * var(--theme-font-scale-ratio));
+  --theme-text-3xl: calc(var(--theme-font-size-base) * var(--theme-font-scale-ratio) * var(--theme-font-scale-ratio) * var(--theme-font-scale-ratio) * var(--theme-font-scale-ratio));
+  
+  /* Layout System */
+  --theme-container-width: 1200px;
+  --theme-spacing-unit: 1rem;
+  --theme-border-radius: 8px;
+  --theme-border-width: 1px;
+  
+  /* Spacing Scale based on spacing unit */
+  --theme-space-1: calc(var(--theme-spacing-unit) * 0.25);  /* 4px */
+  --theme-space-2: calc(var(--theme-spacing-unit) * 0.5);   /* 8px */
+  --theme-space-3: calc(var(--theme-spacing-unit) * 0.75);  /* 12px */
+  --theme-space-4: var(--theme-spacing-unit);               /* 16px */
+  --theme-space-5: calc(var(--theme-spacing-unit) * 1.25);  /* 20px */
+  --theme-space-6: calc(var(--theme-spacing-unit) * 1.5);   /* 24px */
+  --theme-space-8: calc(var(--theme-spacing-unit) * 2);     /* 32px */
+  --theme-space-10: calc(var(--theme-spacing-unit) * 2.5);  /* 40px */
+  --theme-space-12: calc(var(--theme-spacing-unit) * 3);    /* 48px */
+  --theme-space-16: calc(var(--theme-spacing-unit) * 4);    /* 64px */
+  --theme-space-20: calc(var(--theme-spacing-unit) * 5);    /* 80px */
+  --theme-space-24: calc(var(--theme-spacing-unit) * 6);    /* 96px */
+  
+  /* Border Radius Scale */
+  --theme-radius-sm: calc(var(--theme-border-radius) * 0.5);
+  --theme-radius-base: var(--theme-border-radius);
+  --theme-radius-lg: calc(var(--theme-border-radius) * 1.5);
+  --theme-radius-xl: calc(var(--theme-border-radius) * 2);
+  --theme-radius-full: 9999px;
+  
+  /* Shadow System */
+  --theme-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --theme-shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --theme-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --theme-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --theme-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --theme-shadow-none: none;
+  
+  /* Animation System */
+  --theme-animation-speed: 300ms;
+  --theme-animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Component-specific variables */
+  --theme-button-padding: var(--theme-space-2) var(--theme-space-4);
+  --theme-card-padding: var(--theme-space-6);
+  --theme-input-padding: var(--theme-space-3) var(--theme-space-4);
+  
+  /* Z-index scale */
+  --theme-z-dropdown: 1000;
+  --theme-z-sticky: 1020;
+  --theme-z-fixed: 1030;
+  --theme-z-modal-backdrop: 1040;
+  --theme-z-modal: 1050;
+  --theme-z-popover: 1060;
+  --theme-z-tooltip: 1070;
+  --theme-z-toast: 1080;
+}
+
+/* Dark mode adjustments */
+[data-theme-scope].dark {
+  --theme-surface: #1f2937;
+  --theme-surface-alt: #111827;
+  --theme-text: #f9fafb;
+  --theme-text-secondary: #d1d5db;
+  --theme-border: #374151;
+
+  /* Alias también reflejan dark mode automáticamente vía referencias */
+}
+
+/* Theme transition animation */
+.theme-transition {
+  transition: 
+    background-color var(--theme-animation-speed) var(--theme-animation-easing),
+    color var(--theme-animation-speed) var(--theme-animation-easing),
+    border-color var(--theme-animation-speed) var(--theme-animation-easing);
+}
+
+/* Base component styles using theme variables */
+.theme-container {
+  max-width: var(--theme-container-width);
+  margin: 0 auto;
+  padding-left: var(--theme-space-4);
+  padding-right: var(--theme-space-4);
+}
+
+.theme-card {
+  background-color: var(--theme-surface);
+  border: var(--theme-border-width) solid var(--theme-border);
+  border-radius: var(--theme-radius-base);
+  padding: var(--theme-card-padding);
+  box-shadow: var(--theme-shadow-base);
+}
+
+.theme-button {
+  font-family: var(--theme-font-body);
+  font-size: var(--theme-text-base);
+  padding: var(--theme-button-padding);
+  border-radius: var(--theme-radius-base);
+  border: var(--theme-border-width) solid transparent;
+  background-color: var(--theme-primary);
+  color: white;
+  cursor: pointer;
+  transition: all var(--theme-animation-speed) var(--theme-animation-easing);
+}
+
+.theme-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.theme-button.secondary {
+  background-color: var(--theme-secondary);
+}
+
+.theme-button.outlined {
+  background-color: transparent;
+  color: var(--theme-primary);
+  border-color: var(--theme-primary);
+}
+
+.theme-input {
+  font-family: var(--theme-font-body);
+  font-size: var(--theme-text-base);
+  padding: var(--theme-input-padding);
+  border: var(--theme-border-width) solid var(--theme-border);
+  border-radius: var(--theme-radius-base);
+  background-color: var(--theme-surface);
+  color: var(--theme-text);
+  transition: border-color var(--theme-animation-speed) var(--theme-animation-easing);
+}
+
+.theme-input:focus {
+  outline: none;
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* Typography classes using theme variables */
+.theme-heading {
+  font-family: var(--theme-font-heading);
+  font-weight: 600;
+  line-height: calc(var(--theme-line-height-base) * 0.9);
+  letter-spacing: var(--theme-letter-spacing);
+  color: var(--theme-text);
+}
+
+.theme-text {
+  font-family: var(--theme-font-body);
+  line-height: var(--theme-line-height-base);
+  color: var(--theme-text);
+}
+
+.theme-text-secondary {
+  color: var(--theme-text-secondary);
+}
+
+/* Size variants */
+.text-xs { font-size: var(--theme-text-xs); }
+.text-sm { font-size: var(--theme-text-sm); }
+.text-base { font-size: var(--theme-text-base); }
+.text-lg { font-size: var(--theme-text-lg); }
+.text-xl { font-size: var(--theme-text-xl); }
+.text-2xl { font-size: var(--theme-text-2xl); }
+.text-3xl { font-size: var(--theme-text-3xl); }
