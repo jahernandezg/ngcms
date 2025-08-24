@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { unwrapData } from './http-utils';
 
 export interface ActiveTheme {
   id: string;
@@ -10,6 +11,7 @@ export interface ActiveTheme {
   primaryColor?: string | null;
   secondaryColor?: string | null;
   accentColor?: string | null;
+  backgroundColor?: string | null;
   surfaceColor?: string | null;
   surfaceAltColor?: string | null;
   textColor?: string | null;
@@ -65,6 +67,12 @@ export class ThemeService {
   readonly darkMode = this.darkModeSig.asReadonly();
   private userPreferenceSet = false;
   private mediaQueryList: MediaQueryList | null = null;
+  private storageListenerInit = false;
+  private containerEl: HTMLElement | null = null;
+
+  constructor() {
+    this.initStorageSync();
+  }
 
   load() {
     if (this.loading()) return;
@@ -109,16 +117,12 @@ export class ThemeService {
     const previewId = this.readPreviewId();
     const url = previewId ? `/api/admin/themes/${previewId}` : '/api/theme/active';
   
-    this.http.get<unknown>(url).subscribe({
+  this.http.get<unknown>(url).subscribe({
       next: (raw) => {
-        let theme: ActiveTheme | null = null;
-        const isActiveTheme = (v: unknown): v is ActiveTheme => !!v && typeof v === 'object' && 'id' in v && 'name' in v;
-        const isEnvelope = (v: unknown): v is { data: unknown } => !!v && typeof v === 'object' && 'data' in v;
+  const unwrapped = unwrapData<ActiveTheme | null>(raw as unknown as { data: ActiveTheme | null } | ActiveTheme | null);
+    const theme: ActiveTheme | null = unwrapped && typeof unwrapped === 'object' ? (unwrapped as ActiveTheme) : null;
         
-        if (isActiveTheme(raw)) theme = raw;
-        else if (isEnvelope(raw) && isActiveTheme(raw.data)) theme = raw.data;
-        
-        this.themeSig.set(theme);
+  this.themeSig.set(theme);
         if (theme && typeof localStorage !== 'undefined' && !previewId) {
           try { 
             localStorage.setItem('activeTheme', JSON.stringify(theme)); 
@@ -143,6 +147,17 @@ export class ThemeService {
       } catch { /* ignore persist error */ }
     }
     this.applyDarkMode();
+  }
+
+  private initStorageSync() {
+    if (typeof window === 'undefined' || this.storageListenerInit) return;
+    window.addEventListener('storage', (e: StorageEvent) => {
+      if (e.key === 'activeTheme' || e.key === 'themeUpdated') {
+        // Re-fetch and apply latest active theme in public pages
+        try { this.load(); } catch { /* noop */ }
+      }
+    });
+    this.storageListenerInit = true;
   }
 
   // Preview theme without persisting
@@ -177,7 +192,7 @@ export class ThemeService {
 
   private applyDarkMode() {
     if (typeof document === 'undefined') return;
-    const root = document.documentElement;
+  const root = this.getTargetElement();
     const body = document.body;
     
     // Add transition for smooth dark mode toggle
@@ -218,7 +233,7 @@ export class ThemeService {
 
   private applyToDocument(theme?: ActiveTheme) {
     if (typeof document === 'undefined') return;
-    const root = document.documentElement;
+  const root = this.getTargetElement();
     
     // Set theme ID attribute
     if (theme?.id) {
@@ -308,6 +323,15 @@ export class ThemeService {
     }
   }
   
+  attachContainer(el: HTMLElement) {
+    this.containerEl = el;
+  }
+  
+  private getTargetElement(): HTMLElement {
+    if (this.containerEl) return this.containerEl;
+    return document.documentElement;
+  }
+  
   private applyShadowStyle(root: HTMLElement, shadowStyle?: string | null) {
     const shadowMap: Record<string, string> = {
       'NONE': 'none',
@@ -333,8 +357,9 @@ export class ThemeService {
       const styleEl = document.createElement('style');
       styleEl.id = this.appliedCssId;
       
-      // Transform CSS to work with dark mode
-      let transformedCss = customCss.replace(/:root\b/g, ':root:not(.dark)');
+  // Transform CSS to scope within the public layout container and work with dark mode
+  // Replace :root with [data-theme-scope] to avoid bleeding into admin
+  let transformedCss = customCss.replace(/:root\b/g, '[data-theme-scope]:not(.dark)');
       
       // Add scope comment
       if (!transformedCss.includes('--theme-')) {

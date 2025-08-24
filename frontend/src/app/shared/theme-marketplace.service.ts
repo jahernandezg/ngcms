@@ -1,6 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
 import { ActiveTheme } from './theme.service';
 import { ThemeAnimations } from './animation-engine.service';
 
@@ -63,14 +62,16 @@ export class ThemeMarketplaceService {
     'responsive', 'profesional', 'e-commerce', 'blog', 'portfolio', 'landing'
   ];
 
-  constructor(private http: HttpClient) {
+  private http = inject(HttpClient);
+
+  constructor() {
     this.loadMockThemes();
   }
 
   /**
    * Get marketplace themes with filters
    */
-  getMarketplaceThemes(filters?: MarketplaceFilters): Observable<MarketplaceTheme[]> {
+  getMarketplaceThemes(filters?: MarketplaceFilters): Promise<MarketplaceTheme[]> {
     // En una implementación real, esto haría una petición HTTP al backend
     // return this.http.get<MarketplaceTheme[]>('/api/marketplace/themes', { params: filters });
     
@@ -80,9 +81,9 @@ export class ThemeMarketplaceService {
       themes = this.applyFilters(themes, filters);
     }
     
-    return new Promise(resolve => {
+    return new Promise<MarketplaceTheme[]>((resolve) => {
       setTimeout(() => resolve(themes), 500);
-    }) as any;
+    });
   }
 
   /**
@@ -95,17 +96,17 @@ export class ThemeMarketplaceService {
   /**
    * Get theme by ID
    */
-  getThemeById(id: string): Observable<MarketplaceTheme | null> {
+  getThemeById(id: string): Promise<MarketplaceTheme | null> {
     const theme = this.marketplaceThemes().find(t => t.marketplaceId === id);
-    return new Promise(resolve => {
+    return new Promise<MarketplaceTheme | null>((resolve) => {
       setTimeout(() => resolve(theme || null), 300);
-    }) as any;
+    });
   }
 
   /**
    * Search themes
    */
-  searchThemes(query: string, filters?: MarketplaceFilters): Observable<MarketplaceTheme[]> {
+  searchThemes(query: string, filters?: MarketplaceFilters): Promise<MarketplaceTheme[]> {
     let themes = this.marketplaceThemes().filter(theme => 
       theme.name.toLowerCase().includes(query.toLowerCase()) ||
       theme.description?.toLowerCase().includes(query.toLowerCase()) ||
@@ -117,15 +118,15 @@ export class ThemeMarketplaceService {
       themes = this.applyFilters(themes, filters);
     }
 
-    return new Promise(resolve => {
+    return new Promise<MarketplaceTheme[]>((resolve) => {
       setTimeout(() => resolve(themes), 400);
-    }) as any;
+    });
   }
 
   /**
    * Download/Install theme
    */
-  downloadTheme(themeId: string): Observable<ActiveTheme> {
+  downloadTheme(themeId: string): Promise<ActiveTheme> {
     const marketplaceTheme = this.marketplaceThemes().find(t => t.marketplaceId === themeId);
     
     if (!marketplaceTheme) {
@@ -135,20 +136,102 @@ export class ThemeMarketplaceService {
     // Increment download count
     marketplaceTheme.downloads++;
     
-    // Convert to regular theme
-    const { marketplaceId, authorId, authorName, downloads, rating, ratingCount, 
-            featured, premium, price, tags, screenshots, demoUrl, publishedAt, 
-            updatedAt, version, compatibility, license, animations, ...theme } = marketplaceTheme;
+    // Convert to regular theme by selecting ActiveTheme fields
+    const {
+      id,
+      name,
+      isActive,
+      // Colors
+      primaryColor,
+      secondaryColor,
+      accentColor,
+      backgroundColor,
+      surfaceColor,
+      surfaceAltColor,
+      textColor,
+      textSecondary,
+      borderColor,
+      errorColor,
+      successColor,
+      warningColor,
+      // Typography
+      fontHeading,
+      fontBody,
+      fontSizeBase,
+      fontScaleRatio,
+      lineHeightBase,
+      letterSpacing,
+      // Layout
+      containerWidth,
+      spacingUnit,
+      borderRadius,
+      borderWidth,
+      // Style enums
+      headerStyle,
+      footerStyle,
+      buttonStyle,
+      cardStyle,
+      shadowStyle,
+      // Advanced
+      animationSpeed,
+      customCss,
+      settings,
+      // Metadata
+      description,
+      category,
+      previewImage,
+      version,
+    } = marketplaceTheme;
 
-    return new Promise(resolve => {
-      setTimeout(() => resolve(theme as ActiveTheme), 1000);
-    }) as any;
+    const theme: ActiveTheme = {
+      id,
+      name,
+      isActive: Boolean(isActive),
+      primaryColor,
+      secondaryColor,
+      accentColor,
+      backgroundColor,
+      surfaceColor,
+      surfaceAltColor,
+      textColor,
+      textSecondary,
+      borderColor,
+      errorColor,
+      successColor,
+      warningColor,
+      fontHeading,
+      fontBody,
+      fontSizeBase,
+      fontScaleRatio,
+      lineHeightBase,
+      letterSpacing,
+      containerWidth,
+      spacingUnit,
+      borderRadius,
+      borderWidth,
+      headerStyle,
+      footerStyle,
+      buttonStyle,
+      cardStyle,
+      shadowStyle,
+      animationSpeed,
+      customCss,
+      settings,
+      description,
+      category,
+      previewImage,
+      version,
+    };
+
+    return new Promise<ActiveTheme>((resolve) => {
+      setTimeout(() => resolve(theme), 1000);
+    });
   }
 
   /**
    * Rate theme
    */
-  rateTheme(themeId: string, rating: number, comment?: string): Observable<ThemeRating> {
+  rateTheme(themeId: string, rating: number, comment?: string): Promise<ThemeRating> {
     const newRating: ThemeRating = {
       id: `rating_${Date.now()}`,
       themeId,
@@ -167,15 +250,15 @@ export class ThemeMarketplaceService {
       theme.rating = totalRating / theme.ratingCount;
     }
 
-    return new Promise(resolve => {
+    return new Promise<ThemeRating>((resolve) => {
       setTimeout(() => resolve(newRating), 500);
-    }) as any;
+    });
   }
 
   /**
    * Get theme ratings
    */
-  getThemeRatings(themeId: string): Observable<ThemeRating[]> {
+  getThemeRatings(themeId: string): Promise<ThemeRating[]> {
     // Mock ratings
     const mockRatings: ThemeRating[] = [
       {
@@ -207,15 +290,15 @@ export class ThemeMarketplaceService {
       }
     ];
 
-    return new Promise(resolve => {
+    return new Promise<ThemeRating[]>((resolve) => {
       setTimeout(() => resolve(mockRatings), 300);
-    }) as any;
+    });
   }
 
   /**
    * Submit theme to marketplace
    */
-  submitTheme(theme: ActiveTheme, marketplaceData: Partial<MarketplaceTheme>): Observable<MarketplaceTheme> {
+  submitTheme(theme: ActiveTheme, marketplaceData: Partial<MarketplaceTheme>): Promise<MarketplaceTheme> {
     const marketplaceTheme: MarketplaceTheme = {
       ...theme,
       marketplaceId: `theme_${Date.now()}`,
@@ -242,33 +325,33 @@ export class ThemeMarketplaceService {
     const currentThemes = this.marketplaceThemes();
     this.marketplaceThemes.set([...currentThemes, marketplaceTheme]);
 
-    return new Promise(resolve => {
+    return new Promise<MarketplaceTheme>((resolve) => {
       setTimeout(() => resolve(marketplaceTheme), 1000);
-    }) as any;
+    });
   }
 
   /**
    * Get user's submitted themes
    */
-  getUserThemes(): Observable<MarketplaceTheme[]> {
+  getUserThemes(): Promise<MarketplaceTheme[]> {
     const userThemes = this.marketplaceThemes().filter(theme => theme.authorId === 'current_user');
-    
-    return new Promise(resolve => {
+
+    return new Promise<MarketplaceTheme[]>((resolve) => {
       setTimeout(() => resolve(userThemes), 400);
-    }) as any;
+    });
   }
 
   /**
    * Delete user theme
    */
-  deleteTheme(themeId: string): Observable<boolean> {
+  deleteTheme(themeId: string): Promise<boolean> {
     const currentThemes = this.marketplaceThemes();
     const filteredThemes = currentThemes.filter(theme => theme.marketplaceId !== themeId);
     this.marketplaceThemes.set(filteredThemes);
 
-    return new Promise(resolve => {
+    return new Promise<boolean>((resolve) => {
       setTimeout(() => resolve(true), 500);
-    }) as any;
+    });
   }
 
   /**
@@ -289,13 +372,13 @@ export class ThemeMarketplaceService {
       filtered = filtered.filter(theme => theme.featured === filters.featured);
     }
 
-    if (filters.minRating) {
-      filtered = filtered.filter(theme => theme.rating >= filters.minRating!);
+    if (filters.minRating != null) {
+      filtered = filtered.filter(theme => theme.rating >= (filters.minRating ?? 0));
     }
 
     if (filters.tags && filters.tags.length > 0) {
       filtered = filtered.filter(theme => 
-        filters.tags!.some(tag => theme.tags.includes(tag))
+        (filters.tags ?? []).some(tag => theme.tags.includes(tag))
       );
     }
 
@@ -346,6 +429,7 @@ export class ThemeMarketplaceService {
     const mockThemes: MarketplaceTheme[] = [
       {
         id: '1',
+  isActive: false,
         marketplaceId: 'marketplace_1',
         name: 'Professional Business',
         description: 'Tema elegante y profesional perfecto para sitios corporativos',
@@ -391,6 +475,7 @@ export class ThemeMarketplaceService {
       },
       {
         id: '2',
+  isActive: false,
         marketplaceId: 'marketplace_2',
         name: 'Creative Portfolio',
         description: 'Tema vibrante y creativo ideal para portfolios y sitios artísticos',
@@ -426,6 +511,7 @@ export class ThemeMarketplaceService {
       },
       {
         id: '3',
+  isActive: false,
         marketplaceId: 'marketplace_3',
         name: 'Minimal Blog',
         description: 'Tema limpio y minimalista perfecto para blogs y contenido editorial',
@@ -459,6 +545,7 @@ export class ThemeMarketplaceService {
       },
       {
         id: '4',
+  isActive: false,
         marketplaceId: 'marketplace_4',
         name: 'E-commerce Store',
         description: 'Tema optimizado para tiendas online con excelente UX de compra',
@@ -490,6 +577,7 @@ export class ThemeMarketplaceService {
       },
       {
         id: '5',
+  isActive: false,
         marketplaceId: 'marketplace_5',
         name: 'Dark Corporate',
         description: 'Tema oscuro y sofisticado para empresas tecnológicas',

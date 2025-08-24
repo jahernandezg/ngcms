@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+@theme {
+	/* Mapeo de tokens Tailwind v4 a variables dinámicas */
+	--color-primary: var(--color-primary);
+	--color-secondary: var(--color-secondary);
+	--color-bg-app: var(--color-bg);
+	--color-text-app: var(--color-text);
+		--color-text-secondary: var(--color-text-secondary);
+	--color-surface: var(--color-surface);
+	--color-surface-alt: var(--color-surface-alt);
+	--color-border-app: var(--color-border);
+}

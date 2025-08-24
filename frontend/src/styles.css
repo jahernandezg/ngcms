@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Global Styles */
 @import './assets/styles/theme-variables.css';
 

@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
+import { unwrapData } from './http-utils';
 
 export interface MenuItem {
   id: string;
@@ -27,8 +28,8 @@ export class MenuService {
   load() {
     if (this._loading()) return;
     this._loading.set(true);
-    this.http.get<{ success:boolean; data: MenuItem[] }>(`/api/menu`).pipe(
-      map(res => res.data)
+    this.http.get<{ success:boolean; data: MenuItem[] } | MenuItem[]>(`/api/menu`).pipe(
+      map((res) => unwrapData<MenuItem[]>(res as { success:boolean; data: MenuItem[] } | MenuItem[]))
     ).subscribe({
       next: (list) => {
         // build tree

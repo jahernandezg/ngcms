@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, OnInit, signal, computed } from '@angular/core';
+import { Component, Output, EventEmitter, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AnimationEngineService, AnimationConfig, ThemeAnimations } from '../../../shared/animation-engine.service';
@@ -53,7 +53,7 @@ import { AnimationEngineService, AnimationConfig, ThemeAnimations } from '../../
           
           <!-- Card Hover -->
           <div class="sub-category">
-            <label>Tarjetas:</label>
+            <label for="card-hover">Tarjetas:</label>
             <div class="animation-selector">
               <select 
                 [(ngModel)]="workingAnimations.cardHover"
@@ -84,7 +84,7 @@ import { AnimationEngineService, AnimationConfig, ThemeAnimations } from '../../
 
           <!-- Button Hover -->
           <div class="sub-category">
-            <label>Botones:</label>
+            <label for="button-hover">Botones:</label>
             <div class="animation-selector">
               <select 
                 [(ngModel)]="workingAnimations.buttonHover"
@@ -112,7 +112,7 @@ import { AnimationEngineService, AnimationConfig, ThemeAnimations } from '../../
 
           <!-- Link Hover -->
           <div class="sub-category">
-            <label>Enlaces:</label>
+            <label for="link-hover">Enlaces:</label>
             <div class="animation-selector">
               <select 
                 [(ngModel)]="workingAnimations.linkHover"
@@ -692,6 +692,7 @@ export class AnimationConfiguratorComponent implements OnInit {
   
   @Output() animationsChanged = new EventEmitter<ThemeAnimations>();
   @Output() animationsApplied = new EventEmitter<ThemeAnimations>();
+    private animationEngine = inject(AnimationEngineService)
 
   workingAnimations: ThemeAnimations = this.animationEngine.currentAnimations();
   originalAnimations: ThemeAnimations = { ...this.workingAnimations };
@@ -765,7 +766,8 @@ export class AnimationConfiguratorComponent implements OnInit {
     }
   ];
 
-  constructor(private animationEngine: AnimationEngineService) {}
+
+
 
   ngOnInit() {
     this.workingAnimations = { ...this.animationEngine.currentAnimations() };
@@ -829,9 +831,8 @@ export class AnimationConfiguratorComponent implements OnInit {
     const preset = this.animationPresets.find(p => p.name === presetName);
     if (!preset) return false;
 
-    return Object.keys(preset.config).every(key => {
-      const configKey = key as keyof ThemeAnimations;
-      return this.workingAnimations[configKey] === preset.config[configKey];
+    return (Object.keys(preset.config) as Array<keyof ThemeAnimations>).every((configKey) => {
+      return this.workingAnimations[configKey] === preset.config[configKey as keyof typeof preset.config];
     });
   }
 

@@ -1,6 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@cms-workspace/database';
-import { Prisma } from '@prisma/client';
+import {
+  Prisma,
+  ThemeCategory as PrismaThemeCategory,
+  HeaderStyle as PrismaHeaderStyle,
+  FooterStyle as PrismaFooterStyle,
+  ButtonStyle as PrismaButtonStyle,
+  CardStyle as PrismaCardStyle,
+  ShadowStyle as PrismaShadowStyle,
+} from '@prisma/client';
 import { 
   ThemeCategory, 
   HeaderStyle, 
@@ -47,13 +55,46 @@ export class ThemesService {
   // Create theme with extended properties
   async create(data: CreateThemeDto) {
     const sanitizedData = this.validateAndSanitize(data);
-    
-    return this.prisma.themeSettings.create({ 
-      data: { 
-        ...sanitizedData,
-        isActive: false 
-      } 
-    });
+
+    const payload: Prisma.ThemeSettingsCreateInput = {
+      name: sanitizedData.name ?? data.name,
+      description: sanitizedData.description,
+      category: sanitizedData.category as unknown as PrismaThemeCategory | undefined,
+      // Colors
+      primaryColor: sanitizedData.primaryColor,
+      secondaryColor: sanitizedData.secondaryColor,
+      accentColor: sanitizedData.accentColor,
+      surfaceColor: sanitizedData.surfaceColor,
+      surfaceAltColor: sanitizedData.surfaceAltColor,
+      textColor: sanitizedData.textColor,
+      textSecondary: sanitizedData.textSecondary,
+      borderColor: sanitizedData.borderColor,
+      errorColor: sanitizedData.errorColor,
+      successColor: sanitizedData.successColor,
+      warningColor: sanitizedData.warningColor,
+      // Typography
+      fontHeading: sanitizedData.fontHeading,
+      fontBody: sanitizedData.fontBody,
+      fontSizeBase: sanitizedData.fontSizeBase,
+      fontScaleRatio: sanitizedData.fontScaleRatio as number | undefined,
+      lineHeightBase: sanitizedData.lineHeightBase as number | undefined,
+      // Layout / styles
+      containerWidth: sanitizedData.containerWidth,
+      spacingUnit: sanitizedData.spacingUnit,
+      borderRadius: sanitizedData.borderRadius,
+      headerStyle: sanitizedData.headerStyle as unknown as PrismaHeaderStyle | undefined,
+      footerStyle: sanitizedData.footerStyle as unknown as PrismaFooterStyle | undefined,
+      buttonStyle: sanitizedData.buttonStyle as unknown as PrismaButtonStyle | undefined,
+      cardStyle: sanitizedData.cardStyle as unknown as PrismaCardStyle | undefined,
+      shadowStyle: sanitizedData.shadowStyle as unknown as PrismaShadowStyle | undefined,
+      // Other
+      animationSpeed: sanitizedData.animationSpeed,
+      customCss: sanitizedData.customCss,
+      previewImage: sanitizedData.previewImage,
+      isActive: false,
+    };
+
+    return this.prisma.themeSettings.create({ data: payload });
   }
 
   // Update theme
@@ -65,16 +106,80 @@ export class ThemesService {
     
     if (data.setActive) {
       // Update and activate in transaction
+      const updatePayload: Prisma.ThemeSettingsUpdateInput = {
+        name: sanitizedData.name,
+        description: sanitizedData.description,
+        category: sanitizedData.category as unknown as PrismaThemeCategory | undefined,
+        primaryColor: sanitizedData.primaryColor,
+        secondaryColor: sanitizedData.secondaryColor,
+        accentColor: sanitizedData.accentColor,
+        surfaceColor: sanitizedData.surfaceColor,
+        surfaceAltColor: sanitizedData.surfaceAltColor,
+        textColor: sanitizedData.textColor,
+        textSecondary: sanitizedData.textSecondary,
+        borderColor: sanitizedData.borderColor,
+        errorColor: sanitizedData.errorColor,
+        successColor: sanitizedData.successColor,
+        warningColor: sanitizedData.warningColor,
+        fontHeading: sanitizedData.fontHeading,
+        fontBody: sanitizedData.fontBody,
+        fontSizeBase: sanitizedData.fontSizeBase,
+        fontScaleRatio: sanitizedData.fontScaleRatio as number | undefined,
+        lineHeightBase: sanitizedData.lineHeightBase as number | undefined,
+        containerWidth: sanitizedData.containerWidth,
+        spacingUnit: sanitizedData.spacingUnit,
+        borderRadius: sanitizedData.borderRadius,
+        headerStyle: sanitizedData.headerStyle as unknown as PrismaHeaderStyle | undefined,
+        footerStyle: sanitizedData.footerStyle as unknown as PrismaFooterStyle | undefined,
+        buttonStyle: sanitizedData.buttonStyle as unknown as PrismaButtonStyle | undefined,
+        cardStyle: sanitizedData.cardStyle as unknown as PrismaCardStyle | undefined,
+        shadowStyle: sanitizedData.shadowStyle as unknown as PrismaShadowStyle | undefined,
+        animationSpeed: sanitizedData.animationSpeed,
+        customCss: sanitizedData.customCss,
+        previewImage: sanitizedData.previewImage,
+        isActive: true,
+      };
+
       return this.prisma.$transaction([
         this.prisma.themeSettings.updateMany({ data: { isActive: false }, where: { isActive: true } }),
-        this.prisma.themeSettings.update({ where: { id }, data: { ...sanitizedData, isActive: true } })
+        this.prisma.themeSettings.update({ where: { id }, data: updatePayload })
       ]);
     }
 
-    return this.prisma.themeSettings.update({ 
-      where: { id }, 
-      data: sanitizedData 
-    });
+    const updatePayload: Prisma.ThemeSettingsUpdateInput = {
+      name: sanitizedData.name,
+      description: sanitizedData.description,
+      category: sanitizedData.category as unknown as PrismaThemeCategory | undefined,
+      primaryColor: sanitizedData.primaryColor,
+      secondaryColor: sanitizedData.secondaryColor,
+      accentColor: sanitizedData.accentColor,
+      surfaceColor: sanitizedData.surfaceColor,
+      surfaceAltColor: sanitizedData.surfaceAltColor,
+      textColor: sanitizedData.textColor,
+      textSecondary: sanitizedData.textSecondary,
+      borderColor: sanitizedData.borderColor,
+      errorColor: sanitizedData.errorColor,
+      successColor: sanitizedData.successColor,
+      warningColor: sanitizedData.warningColor,
+      fontHeading: sanitizedData.fontHeading,
+      fontBody: sanitizedData.fontBody,
+      fontSizeBase: sanitizedData.fontSizeBase,
+      fontScaleRatio: sanitizedData.fontScaleRatio as number | undefined,
+      lineHeightBase: sanitizedData.lineHeightBase as number | undefined,
+      containerWidth: sanitizedData.containerWidth,
+      spacingUnit: sanitizedData.spacingUnit,
+      borderRadius: sanitizedData.borderRadius,
+      headerStyle: sanitizedData.headerStyle as unknown as PrismaHeaderStyle | undefined,
+      footerStyle: sanitizedData.footerStyle as unknown as PrismaFooterStyle | undefined,
+      buttonStyle: sanitizedData.buttonStyle as unknown as PrismaButtonStyle | undefined,
+      cardStyle: sanitizedData.cardStyle as unknown as PrismaCardStyle | undefined,
+      shadowStyle: sanitizedData.shadowStyle as unknown as PrismaShadowStyle | undefined,
+      animationSpeed: sanitizedData.animationSpeed,
+      customCss: sanitizedData.customCss,
+      previewImage: sanitizedData.previewImage,
+    };
+
+    return this.prisma.themeSettings.update({ where: { id }, data: updatePayload });
   }
 
   // Set active theme
@@ -94,10 +199,44 @@ export class ThemesService {
     if (!existing) throw new NotFoundException('Theme no encontrado');
     
     const sanitizedData = this.validateAndSanitize(data);
-    
+
+    const updatePayload: Prisma.ThemeSettingsUpdateInput = {
+      name: sanitizedData.name,
+      description: sanitizedData.description,
+      category: sanitizedData.category as unknown as PrismaThemeCategory | undefined,
+      primaryColor: sanitizedData.primaryColor,
+      secondaryColor: sanitizedData.secondaryColor,
+      accentColor: sanitizedData.accentColor,
+      surfaceColor: sanitizedData.surfaceColor,
+      surfaceAltColor: sanitizedData.surfaceAltColor,
+      textColor: sanitizedData.textColor,
+      textSecondary: sanitizedData.textSecondary,
+      borderColor: sanitizedData.borderColor,
+      errorColor: sanitizedData.errorColor,
+      successColor: sanitizedData.successColor,
+      warningColor: sanitizedData.warningColor,
+      fontHeading: sanitizedData.fontHeading,
+      fontBody: sanitizedData.fontBody,
+      fontSizeBase: sanitizedData.fontSizeBase,
+      fontScaleRatio: sanitizedData.fontScaleRatio as number | undefined,
+      lineHeightBase: sanitizedData.lineHeightBase as number | undefined,
+      containerWidth: sanitizedData.containerWidth,
+      spacingUnit: sanitizedData.spacingUnit,
+      borderRadius: sanitizedData.borderRadius,
+      headerStyle: sanitizedData.headerStyle as unknown as PrismaHeaderStyle | undefined,
+      footerStyle: sanitizedData.footerStyle as unknown as PrismaFooterStyle | undefined,
+      buttonStyle: sanitizedData.buttonStyle as unknown as PrismaButtonStyle | undefined,
+      cardStyle: sanitizedData.cardStyle as unknown as PrismaCardStyle | undefined,
+      shadowStyle: sanitizedData.shadowStyle as unknown as PrismaShadowStyle | undefined,
+      animationSpeed: sanitizedData.animationSpeed,
+      customCss: sanitizedData.customCss,
+      previewImage: sanitizedData.previewImage,
+      isActive: true,
+    };
+
     return this.prisma.$transaction([
       this.prisma.themeSettings.updateMany({ data: { isActive: false }, where: { isActive: true } }),
-      this.prisma.themeSettings.update({ where: { id }, data: { ...sanitizedData, isActive: true } })
+      this.prisma.themeSettings.update({ where: { id }, data: updatePayload })
     ]);
   }
 
@@ -143,21 +282,84 @@ export class ThemesService {
     }
     
     // Create copy with all properties except id, createdAt, updatedAt, isActive
-    const { id: _, createdAt, updatedAt, isActive, ...themeData } = existing;
+    const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, isActive: _isActive, ...themeData } = existing;
     
-    return this.prisma.themeSettings.create({ 
-      data: { 
-        ...themeData,
-        name: finalName,
-        isActive: false 
-      } 
+    const payload: Prisma.ThemeSettingsCreateInput = ({
+      name: finalName,
+      description: themeData.description ?? undefined,
+      category: themeData.category as unknown as PrismaThemeCategory | undefined,
+      primaryColor: themeData.primaryColor,
+      secondaryColor: themeData.secondaryColor,
+      accentColor: themeData.accentColor,
+      surfaceColor: themeData.surfaceColor,
+      surfaceAltColor: themeData.surfaceAltColor,
+      textColor: themeData.textColor,
+      textSecondary: themeData.textSecondary,
+      borderColor: themeData.borderColor,
+      errorColor: themeData.errorColor,
+      successColor: themeData.successColor,
+      warningColor: themeData.warningColor,
+      fontHeading: themeData.fontHeading,
+      fontBody: themeData.fontBody,
+      fontSizeBase: themeData.fontSizeBase,
+      fontScaleRatio: themeData.fontScaleRatio as number | undefined,
+      lineHeightBase: themeData.lineHeightBase as number | undefined,
+      containerWidth: themeData.containerWidth,
+      spacingUnit: themeData.spacingUnit,
+      borderRadius: themeData.borderRadius,
+      headerStyle: themeData.headerStyle as unknown as PrismaHeaderStyle | undefined,
+      footerStyle: themeData.footerStyle as unknown as PrismaFooterStyle | undefined,
+      buttonStyle: themeData.buttonStyle as unknown as PrismaButtonStyle | undefined,
+      cardStyle: themeData.cardStyle as unknown as PrismaCardStyle | undefined,
+      shadowStyle: themeData.shadowStyle as unknown as PrismaShadowStyle | undefined,
+      animationSpeed: themeData.animationSpeed,
+      customCss: themeData.customCss ?? undefined,
+      previewImage: themeData.previewImage ?? undefined,
+      // Evitar null vs JSON null
+      settings: existing.settings ?? undefined,
+      isActive: false,
     });
+
+    return this.prisma.themeSettings.create({ data: payload });
   }
 
   // Legacy method: Update settings only
   updateSettings(id: string, data: UpdateThemeDto) {
     const sanitizedData = this.validateAndSanitize(data);
-    return this.prisma.themeSettings.update({ where: { id }, data: sanitizedData });
+    const updatePayload: Prisma.ThemeSettingsUpdateInput = {
+      name: sanitizedData.name,
+      description: sanitizedData.description,
+      category: sanitizedData.category as unknown as PrismaThemeCategory | undefined,
+      primaryColor: sanitizedData.primaryColor,
+      secondaryColor: sanitizedData.secondaryColor,
+      accentColor: sanitizedData.accentColor,
+      surfaceColor: sanitizedData.surfaceColor,
+      surfaceAltColor: sanitizedData.surfaceAltColor,
+      textColor: sanitizedData.textColor,
+      textSecondary: sanitizedData.textSecondary,
+      borderColor: sanitizedData.borderColor,
+      errorColor: sanitizedData.errorColor,
+      successColor: sanitizedData.successColor,
+      warningColor: sanitizedData.warningColor,
+      fontHeading: sanitizedData.fontHeading,
+      fontBody: sanitizedData.fontBody,
+      fontSizeBase: sanitizedData.fontSizeBase,
+      fontScaleRatio: sanitizedData.fontScaleRatio as number | undefined,
+      lineHeightBase: sanitizedData.lineHeightBase as number | undefined,
+      containerWidth: sanitizedData.containerWidth,
+      spacingUnit: sanitizedData.spacingUnit,
+      borderRadius: sanitizedData.borderRadius,
+      headerStyle: sanitizedData.headerStyle as unknown as PrismaHeaderStyle | undefined,
+      footerStyle: sanitizedData.footerStyle as unknown as PrismaFooterStyle | undefined,
+      buttonStyle: sanitizedData.buttonStyle as unknown as PrismaButtonStyle | undefined,
+      cardStyle: sanitizedData.cardStyle as unknown as PrismaCardStyle | undefined,
+      shadowStyle: sanitizedData.shadowStyle as unknown as PrismaShadowStyle | undefined,
+      animationSpeed: sanitizedData.animationSpeed,
+      customCss: sanitizedData.customCss,
+      previewImage: sanitizedData.previewImage,
+    };
+
+    return this.prisma.themeSettings.update({ where: { id }, data: updatePayload });
   }
 
   // Create predefined themes for initial setup
@@ -529,13 +731,14 @@ export class ThemesService {
   }
 
   // Validation and sanitization
-  private validateAndSanitize(data: Partial<CreateThemeDto | UpdateThemeDto>) {
-    const result: Record<string, any> = {};
+  private validateAndSanitize(data: Partial<CreateThemeDto & UpdateThemeDto>) {
+    const result: Partial<CreateThemeDto & UpdateThemeDto> = {};
     
     // Copy all provided fields
-    Object.keys(data).forEach(key => {
-      if (data[key as keyof typeof data] !== undefined) {
-        result[key] = data[key as keyof typeof data];
+    Object.keys(data).forEach((key) => {
+      const value = data[key as keyof typeof data];
+      if (value !== undefined) {
+        (result as Record<string, unknown>)[key] = value as unknown;
       }
     });
 
@@ -547,18 +750,20 @@ export class ThemesService {
     const colorFields = [
       'primaryColor', 'secondaryColor', 'accentColor', 'surfaceColor',
       'surfaceAltColor', 'textColor', 'textSecondary', 'borderColor',
-      'errorColor', 'successColor', 'warningColor'
-    ];
-    
-    colorFields.forEach(field => {
-      if (result[field]) {
-        const color = result[field].toString().trim();
-        if (!color.match(/^#[0-9A-Fa-f]{6}$/)) {
+      'errorColor', 'successColor', 'warningColor',
+    ] as const;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const resAny = result as any;
+    for (const field of colorFields) {
+      if (resAny[field]) {
+        const color = String(resAny[field]).trim();
+        if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
           throw new BadRequestException(`Invalid color format for ${field}. Use hex format like #ffffff`);
         }
-        result[field] = color;
+        resAny[field] = color;
       }
-    });
+    }
     
     // Sanitize fonts
     if (result.fontHeading) result.fontHeading = result.fontHeading.toString().trim();
@@ -566,7 +771,7 @@ export class ThemesService {
     
     // Validate numbers
     if (result.fontScaleRatio !== undefined) {
-      const ratio = parseFloat(result.fontScaleRatio);
+      const ratio = typeof result.fontScaleRatio === 'string' ? parseFloat(result.fontScaleRatio) : Number(result.fontScaleRatio);
       if (isNaN(ratio) || ratio < 1 || ratio > 2) {
         throw new BadRequestException('fontScaleRatio must be between 1 and 2');
       }
@@ -574,7 +779,7 @@ export class ThemesService {
     }
     
     if (result.lineHeightBase !== undefined) {
-      const lineHeight = parseFloat(result.lineHeightBase);
+      const lineHeight = typeof result.lineHeightBase === 'string' ? parseFloat(result.lineHeightBase) : Number(result.lineHeightBase);
       if (isNaN(lineHeight) || lineHeight < 1 || lineHeight > 3) {
         throw new BadRequestException('lineHeightBase must be between 1 and 3');
       }

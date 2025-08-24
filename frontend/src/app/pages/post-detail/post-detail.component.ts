@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SeoService } from '../../shared/seo.service';
+import { unwrapData } from '../../shared/http-utils';
 
 type PostDetail = {
   id: string;
@@ -29,7 +30,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[] }
   template: `
   <section class="container mx-auto p-4" *ngIf="!loading(); else loadingTpl">
       <h1 class="text-3xl font-semibold mb-2">{{ post()?.title }}</h1>
-      <small class="text-gray-500">Por {{ post()?.author?.name }} · {{ post()?.readingTime }} min</small>
+  <small class="text-text-secondary">Por {{ post()?.author?.name }} · {{ post()?.readingTime }} min</small>
       <div class="flex flex-wrap gap-2 my-2">
   <!-- Enlaces de categoría ahora usan esquema limpio (resolver dinámico) -->
   <a *ngFor="let c of post()?.categories" [routerLink]="['/', c.slug]" class="text-xs px-2 py-1 bg-gray-100 rounded">#{{ c.name }}</a>
@@ -41,12 +42,12 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[] }
         <ul class="list-disc pl-5">
           <li *ngFor="let r of related()">
             <!-- Relacionados: se resuelven por slug limpio -->
-            <a [routerLink]="['/', r.slug]" class="text-blue-600 underline">{{ r.title }}</a>
+            <a [routerLink]="['/', r.slug]" class="text-primary underline">{{ r.title }}</a>
           </li>
         </ul>
       </section>
       <nav class="mt-6">
-  <a [attr.href]="backHref" (click)="goBack($event)" class="text-blue-600 underline">Volver</a>
+  <a [attr.href]="backHref" (click)="goBack($event)" class="text-primary underline">Volver</a>
       </nav>
     </section>
     <!-- JSON-LD Article -->
@@ -115,7 +116,7 @@ export class PostDetailComponent {
     this.loading.set(true);
     this.http.get<ApiEnvelope<PostDetail> | PostDetail>(`/api/posts/${slugOrId}`).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (r) => {
-        const data: PostDetail | undefined = (r as ApiEnvelope<PostDetail>)?.data || (r as PostDetail);
+        const data: PostDetail | undefined = unwrapData<PostDetail>(r as unknown as ApiEnvelope<PostDetail> | PostDetail);
         if (data) {
           // Si viene escapado (&lt; en vez de <) lo decodificamos una sola vez
           const decodeIfNeeded = (html: string) => {
@@ -141,7 +142,7 @@ export class PostDetailComponent {
   }
   private fetchRelated(slug: string) {
     this.http.get<ApiListEnvelope<PostDetail> | PostDetail[]>(`/api/posts/${slug}/related`).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(r => {
-      const data: PostDetail[] | undefined = Array.isArray(r) ? r as PostDetail[] : (r as ApiListEnvelope<PostDetail>)?.data;
+      const data = Array.isArray(r) ? (r as PostDetail[]) : unwrapData<PostDetail[]>(r as unknown as ApiListEnvelope<PostDetail> | PostDetail[]);
       if (data) this.related.set(data);
     });
   }

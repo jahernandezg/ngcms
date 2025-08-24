@@ -27,13 +27,12 @@ export class BrandColorExtractorService {
   // Signal to track extraction progress
   isExtracting = signal(false);
   extractionProgress = signal(0);
-  
-  constructor() {}
+
 
   /**
    * Extract colors from uploaded logo image
    */
-  async extractColorsFromLogo(file: File, brandName: string = ''): Promise<ExtractedBrand> {
+  async extractColorsFromLogo(file: File, brandName = ''): Promise<ExtractedBrand> {
     this.isExtracting.set(true);
     this.extractionProgress.set(0);
 
@@ -73,7 +72,7 @@ export class BrandColorExtractorService {
   /**
    * Extract colors from logo URL
    */
-  async extractColorsFromUrl(logoUrl: string, brandName: string = ''): Promise<ExtractedBrand> {
+  async extractColorsFromUrl(logoUrl: string, brandName = ''): Promise<ExtractedBrand> {
     this.isExtracting.set(true);
     this.extractionProgress.set(0);
 
@@ -356,7 +355,7 @@ export class BrandColorExtractorService {
 
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
+  let h = 0, s = 0; const l = (max + min) / 2;
 
     if (max !== min) {
       const delta = max - min;

@@ -55,7 +55,7 @@ const SYSTEM_FONTS = [
     <div class="font-selector-container">
       
       <!-- Current Selection Display -->
-      <div class="current-font-display" (click)="toggleDropdown()">
+  <div class="current-font-display" (click)="toggleDropdown()" role="button" tabindex="0" (keydown.enter)="toggleDropdown()" (keydown.space)="$event.preventDefault(); toggleDropdown()">
         <div class="font-preview">
           <span 
             class="font-name"
@@ -87,8 +87,11 @@ const SYSTEM_FONTS = [
             <button 
               *ngFor="let font of systemFonts" 
               class="font-option"
-              [class.selected]="value === font.name"
+              [class.selected]="selectedFont === font.name"
               (click)="selectFont(font.name, 'System')"
+              (keydown.enter)="selectFont(font.name, 'System')"
+              (keydown.space)="$event.preventDefault(); selectFont(font.name, 'System')"
+              tabindex="0"
               [style.font-family]="font.css">
               <div class="font-info">
                 <span class="font-name">{{ font.name }}</span>
@@ -105,8 +108,11 @@ const SYSTEM_FONTS = [
             <button 
               *ngFor="let font of category.fonts" 
               class="font-option"
-              [class.selected]="value === font.name"
+              [class.selected]="selectedFont === font.name"
               (click)="selectFont(font.name, category.name)"
+              (keydown.enter)="selectFont(font.name, category.name)"
+              (keydown.space)="$event.preventDefault(); selectFont(font.name, category.name)"
+              tabindex="0"
               [style.font-family]="font.name + ', sans-serif'">
               <div class="font-info">
                 <span class="font-name">{{ font.name }}</span>
@@ -128,7 +134,9 @@ const SYSTEM_FONTS = [
       <div 
         *ngIf="showDropdown()" 
         class="dropdown-overlay"
-        (click)="closeDropdown()">
+        role="button" tabindex="0"
+        (click)="closeDropdown()"
+        (keydown.enter)="closeDropdown()">
       </div>
 
     </div>
@@ -344,7 +352,7 @@ const SYSTEM_FONTS = [
 })
 export class FontSelectorComponent implements OnInit {
   @Input() selectedFont: string | null = null;
-  @Input() label: string = '';
+  @Input() label = '';
   
   @Output() fontSelected = new EventEmitter<{ name: string; category: string }>();
 

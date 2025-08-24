@@ -1,0 +1,4 @@
+@import url('../../assets/styles/theme-variables.css');
+
+/* Scope-only styles for public layout */
+:host { display: contents; }

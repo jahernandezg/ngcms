@@ -183,8 +183,13 @@ export class ThemeListComponent implements OnInit {
   activate(t: AdminTheme) {
     if (this.activatingId()) return;
     this.activatingId.set(t.id);
-  this.http.put<Envelope<unknown>>(`/api/admin/themes/${t.id}/active`, {}).subscribe({
-      next: () => { this.activatingId.set(null); this.reload(); },
+  this.http.put<Envelope<unknown>>(`/api/admin/themes/${t.id}/activate`, {}).subscribe({
+      next: () => { 
+        this.activatingId.set(null); 
+        this.reload(); 
+        // Señal para refrescar tema activo en público
+  try { localStorage.setItem('themeUpdated', String(Date.now())); } catch { /* noop */ }
+      },
       error: () => { this.activatingId.set(null); }
     });
   }

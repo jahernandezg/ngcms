@@ -285,8 +285,8 @@ export class AnimationEngineService {
     // Remove any existing animation classes
     element.className = element.className.replace(/animate-\S+/g, '');
     
-    // Force reflow to ensure class removal
-    element.offsetHeight;
+  // Force reflow to ensure class removal (asignamos a variable para evitar no-unused-expressions)
+  const _forceReflow = element.offsetHeight;
     
     // Add animation class
     element.classList.add(animation.cssClass);
@@ -305,7 +305,7 @@ export class AnimationEngineService {
     let css = '';
     
     // Add CSS for each enabled animation
-    Object.entries(animations).forEach(([key, value]) => {
+  Object.entries(animations).forEach(([_key, value]) => {
       if (typeof value === 'string' && this.animationPresets[value]) {
         const config = this.animationPresets[value];
         css += this.generateAnimationRule(config);
@@ -354,7 +354,7 @@ export class AnimationEngineService {
     const root = document.documentElement;
     const animations = this.currentAnimations();
     
-    Object.entries(animations).forEach(([key, value]) => {
+  Object.entries(animations).forEach(([key, value]) => {
       if (typeof value === 'string' && this.animationPresets[value]) {
         const config = this.animationPresets[value];
         root.style.setProperty(`--animation-${key}-duration`, `${config.duration}ms`);

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ActiveTheme } from './theme.service';
 import { ThemeAnimations, AnimationEngineService } from './animation-engine.service';
 
@@ -26,8 +26,10 @@ export interface ThemeExport {
   providedIn: 'root'
 })
 export class ThemeExportService {
+  private animationEngine = inject(AnimationEngineService);
 
-  constructor(private animationEngine: AnimationEngineService) {}
+  /** No constructor necesario: se usa inject(AnimationEngineService) */
+
 
   /**
    * Export theme as CSS
@@ -210,7 +212,7 @@ export class ThemeExportService {
   /**
    * Generate base styles
    */
-  private generateBaseStyles(theme: ActiveTheme): string {
+  private generateBaseStyles(_theme: ActiveTheme): string {
     return `/* Base Styles */
 body {
   font-family: var(--theme-font-body);
@@ -519,7 +521,7 @@ a:hover {
   /**
    * Generate responsive styles
    */
-  private generateResponsiveStyles(theme: ActiveTheme): string {
+  private generateResponsiveStyles(_theme: ActiveTheme): string {
     return `/* Responsive Styles */
 
 @media (max-width: 640px) {

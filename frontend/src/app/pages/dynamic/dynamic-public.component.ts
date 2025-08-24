@@ -7,6 +7,7 @@ import { HttpClient } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs/operators';
 import { SeoService } from '../../shared/seo.service';
+import { unwrapData } from '../../shared/http-utils';
 import { PostDetailComponent } from '../post-detail/post-detail.component';
 
 type ResolvedTypes = 'homepage' | 'page' | 'blog' | 'category' | 'post' | 'not_found';
@@ -25,10 +26,10 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
   imports: [CommonModule, RouterModule, PostDetailComponent],
   template: `
   <ng-template #blogEmpty>
-    <p class="text-gray-500" *ngIf="!loadingMore()">(Sin publicaciones)</p>
+  <p class="text-text-secondary" *ngIf="!loadingMore()">(Sin publicaciones)</p>
   </ng-template>
   <ng-template #catEmpty>
-    <p class="text-gray-500" *ngIf="!loadingMore()">(Sin publicaciones)</p>
+  <p class="text-text-secondary" *ngIf="!loadingMore()">(Sin publicaciones)</p>
   </ng-template>
   <ng-template #loadingTpl>
     <p class="p-4">Cargando…</p>
@@ -46,18 +47,18 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
       </ng-container>
       <ng-container *ngSwitchCase="'blog'">
   <h1 class="text-2xl font-semibold mb-4">{{ p()?.['title'] || 'Blog' }}</h1>
-    <div *ngIf="loadingMore() && page() === 1" class="text-sm text-gray-500 mb-2">Cargando posts…</div>
+  <div *ngIf="loadingMore() && page() === 1" class="text-sm text-text-secondary mb-2">Cargando posts…</div>
   <div *ngIf="posts() && posts()?.length; else blogEmpty" class="space-y-6">
       <article *ngFor="let post of posts()" class="border-b pb-4 last:border-b-0">
         <h2 class="text-xl font-semibold leading-snug">
           <a [routerLink]="buildPostLink(post)" class="hover:underline">{{ post.title }}</a>
         </h2>
-        <div class="text-xs text-gray-500 flex items-center gap-2 mt-1">
+  <div class="text-xs text-text-secondary flex items-center gap-2 mt-1">
           <span *ngIf="post.author">{{ post.author.name }}</span>
           <span *ngIf="post.publishedAt">· {{ post.publishedAt | date:'mediumDate' }}</span>
           <span *ngIf="post.readingTime">· {{ post.readingTime }} min</span>
         </div>
-  <p class="text-sm text-gray-700 mt-2 line-clamp-3">{{ getExcerpt(post) }}</p>
+  <p class="text-sm text-text-secondary mt-2 line-clamp-3">{{ getExcerpt(post) }}</p>
         <div class="mt-2 flex flex-wrap gap-1" *ngIf="post.categories?.length">
           <a *ngFor="let c of post.categories" [routerLink]="['/', c.slug]" class="text-[11px] px-2 py-0.5 bg-gray-100 rounded hover:bg-gray-200"><span>#</span>{{ c.name }}</a>
         </div>
@@ -65,22 +66,22 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
     </div>
   <!-- blogEmpty template moved outside -->
         <button *ngIf="hasMore() && !loadingMore()" (click)="loadMore()" class="mt-4 px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-50">Cargar más</button>
-        <div *ngIf="loadingMore() && page() > 1" class="text-sm text-gray-500 mt-2">Cargando…</div>
+  <div *ngIf="loadingMore() && page() > 1" class="text-sm text-text-secondary mt-2">Cargando…</div>
       </ng-container>
       <ng-container *ngSwitchCase="'category'">
   <h1 class="text-2xl font-semibold mb-4">Categoría: {{ p()?.['name'] }}</h1>
-    <div *ngIf="loadingMore() && page() === 1" class="text-sm text-gray-500 mb-2">Cargando posts…</div>
+  <div *ngIf="loadingMore() && page() === 1" class="text-sm text-text-secondary mb-2">Cargando posts…</div>
   <div *ngIf="posts() && posts()?.length; else catEmpty" class="space-y-6">
       <article *ngFor="let post of posts()" class="border-b pb-4 last:border-b-0">
         <h2 class="text-xl font-semibold leading-snug">
           <a [routerLink]="buildPostLink(post)" class="hover:underline">{{ post.title }}</a>
         </h2>
-        <div class="text-xs text-gray-500 flex items-center gap-2 mt-1">
+  <div class="text-xs text-text-secondary flex items-center gap-2 mt-1">
           <span *ngIf="post.author">{{ post.author.name }}</span>
           <span *ngIf="post.publishedAt">· {{ post.publishedAt | date:'mediumDate' }}</span>
           <span *ngIf="post.readingTime">· {{ post.readingTime }} min</span>
         </div>
-  <p class="text-sm text-gray-700 mt-2 line-clamp-3">{{ getExcerpt(post) }}</p>
+  <p class="text-sm text-text-secondary mt-2 line-clamp-3">{{ getExcerpt(post) }}</p>
  
         <div class="mt-2 flex flex-wrap gap-1" *ngIf="post.categories?.length">
           <a *ngFor="let c of post.categories" [routerLink]="['/', c.slug]" class="text-[11px] px-2 py-0.5 bg-gray-100 rounded hover:bg-gray-200"><span>#</span>{{ c.name }}</a>
@@ -89,7 +90,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
     </div>
   <!-- catEmpty template moved outside -->
         <button *ngIf="hasMore() && !loadingMore()" (click)="loadMore()" class="mt-4 px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-50">Cargar más</button>
-        <div *ngIf="loadingMore() && page() > 1" class="text-sm text-gray-500 mt-2">Cargando…</div>
+  <div *ngIf="loadingMore() && page() > 1" class="text-sm text-text-secondary mt-2">Cargando…</div>
       </ng-container>
       <ng-container *ngSwitchCase="'post'">
         <app-post-detail [slug]="postSlug()"></app-post-detail>
@@ -178,24 +179,26 @@ export class DynamicPublicComponent {
   private fetchBlogPosts(){
     const nextPage = this.page();
     this.loadingMore.set(true);
-    this.http.get<ApiListEnvelope<PostListItem>>(`/api/posts`, { params: { limit: this.limit, page: nextPage } })
+    this.http.get<ApiListEnvelope<PostListItem> | { data: PostListItem[]; meta?: { total: number } }>(`/api/posts`, { params: { limit: this.limit, page: nextPage } })
       .subscribe(r => {
         const current = this.posts() || [];
-        const incoming = r.data || [];
+        const incoming = unwrapData<PostListItem[]>(r as unknown as ApiListEnvelope<PostListItem> | PostListItem[]);
+        const metaTotal = (r as ApiListEnvelope<PostListItem>)?.meta?.total;
         this.posts.set(nextPage === 1 ? incoming : [...current, ...incoming]);
-        this.totalPosts.set(r.meta?.total ?? (nextPage === 1 ? incoming.length : (current.length + incoming.length)));
+        this.totalPosts.set(metaTotal ?? (nextPage === 1 ? incoming.length : (current.length + incoming.length)));
         this.loadingMore.set(false);
       });
   }
   private fetchCategoryPosts(slug: string){
     const nextPage = this.page();
     this.loadingMore.set(true);
-    this.http.get<ApiListEnvelope<PostListItem>>(`/api/posts/category/${slug}`, { params: { limit: this.limit, page: nextPage } })
+    this.http.get<ApiListEnvelope<PostListItem> | { data: PostListItem[]; meta?: { total: number } }>(`/api/posts/category/${slug}`, { params: { limit: this.limit, page: nextPage } })
       .subscribe(r => {
         const current = this.posts() || [];
-        const incoming = r.data || [];
+        const incoming = unwrapData<PostListItem[]>(r as unknown as ApiListEnvelope<PostListItem> | PostListItem[]);
+        const metaTotal = (r as ApiListEnvelope<PostListItem>)?.meta?.total;
         this.posts.set(nextPage === 1 ? incoming : [...current, ...incoming]);
-        this.totalPosts.set(r.meta?.total ?? (nextPage === 1 ? incoming.length : (current.length + incoming.length)));
+        this.totalPosts.set(metaTotal ?? (nextPage === 1 ? incoming.length : (current.length + incoming.length)));
         this.loadingMore.set(false);
       });
   }

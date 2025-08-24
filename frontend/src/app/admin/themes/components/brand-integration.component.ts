@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, signal, computed } from '@angular/core';
+import { Component, Output, EventEmitter, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BrandColorExtractorService, ExtractedBrand, ColorPalette } from '../../../shared/brand-color-extractor.service';
@@ -22,12 +22,15 @@ import { BrandColorExtractorService, ExtractedBrand, ColorPalette } from '../../
         <!-- File Upload -->
         <div class="upload-section">
           <h4>📤 Subir Logo</h4>
-          <div class="file-upload-area" 
+    <div class="file-upload-area" 
                [class.dragover]="isDragOver()"
                (dragover)="onDragOver($event)"
                (dragleave)="onDragLeave($event)"
-               (drop)="onDrop($event)"
-               (click)="fileInput.click()">
+      (drop)="onDrop($event)"
+      (click)="fileInput.click()"
+      role="button" tabindex="0"
+      (keydown.enter)="fileInput.click()"
+      (keydown.space)="$event.preventDefault(); fileInput.click()">
             
             <div *ngIf="!selectedFile()" class="upload-placeholder">
               <div class="upload-icon">📁</div>
@@ -35,11 +38,11 @@ import { BrandColorExtractorService, ExtractedBrand, ColorPalette } from '../../
               <small>Formatos soportados: PNG, JPG, SVG</small>
             </div>
             
-            <div *ngIf="selectedFile()" class="file-preview">
-              <img [src]="previewUrl()" [alt]="selectedFile()!.name" class="logo-preview">
+            <div *ngIf="selectedFile() as file" class="file-preview">
+              <img [src]="previewUrl()" [alt]="file.name" class="logo-preview">
               <div class="file-info">
-                <p class="file-name">{{ selectedFile()!.name }}</p>
-                <p class="file-size">{{ formatFileSize(selectedFile()!.size) }}</p>
+                <p class="file-name">{{ file.name }}</p>
+                <p class="file-size">{{ formatFileSize(file.size) }}</p>
                 <button type="button" class="btn-remove" (click)="removeFile($event)">
                   ❌ Quitar
                 </button>
@@ -118,38 +121,38 @@ import { BrandColorExtractorService, ExtractedBrand, ColorPalette } from '../../
       </div>
 
       <!-- Extracted Palette Display -->
-      <div *ngIf="extractedBrand()" class="extracted-palette">
+  <div *ngIf="extractedBrand() as brand" class="extracted-palette">
         <div class="palette-header">
           <h4>🎨 Paleta Extraída</h4>
           <div class="confidence-score">
             <span class="confidence-label">Confianza:</span>
             <div class="confidence-bar">
-              <div class="confidence-fill" 
-                   [style.width.%]="extractedBrand()!.palette.confidence * 100"
-                   [class]="getConfidenceClass(extractedBrand()!.palette.confidence)"></div>
+      <div class="confidence-fill" 
+       [style.width.%]="brand.palette.confidence * 100"
+       [class]="getConfidenceClass(brand.palette.confidence)"></div>
             </div>
-            <span class="confidence-text">{{ Math.round(extractedBrand()!.palette.confidence * 100) }}%</span>
+    <span class="confidence-text">{{ Math.round(brand.palette.confidence * 100) }}%</span>
           </div>
         </div>
 
         <!-- Main Colors -->
         <div class="main-colors">
           <div class="color-group">
-            <div class="color-swatch primary" [style.background-color]="extractedBrand()!.palette.primary">
+            <div class="color-swatch primary" [style.background-color]="brand.palette.primary">
               <span class="color-label">Principal</span>
-              <span class="color-value">{{ extractedBrand()!.palette.primary }}</span>
+              <span class="color-value">{{ brand.palette.primary }}</span>
             </div>
           </div>
           <div class="color-group">
-            <div class="color-swatch secondary" [style.background-color]="extractedBrand()!.palette.secondary">
+            <div class="color-swatch secondary" [style.background-color]="brand.palette.secondary">
               <span class="color-label">Secundario</span>
-              <span class="color-value">{{ extractedBrand()!.palette.secondary }}</span>
+              <span class="color-value">{{ brand.palette.secondary }}</span>
             </div>
           </div>
           <div class="color-group">
-            <div class="color-swatch accent" [style.background-color]="extractedBrand()!.palette.accent">
+            <div class="color-swatch accent" [style.background-color]="brand.palette.accent">
               <span class="color-label">Acento</span>
-              <span class="color-value">{{ extractedBrand()!.palette.accent }}</span>
+              <span class="color-value">{{ brand.palette.accent }}</span>
             </div>
           </div>
         </div>
@@ -159,7 +162,7 @@ import { BrandColorExtractorService, ExtractedBrand, ColorPalette } from '../../
           <h5>Colores dominantes detectados:</h5>
           <div class="dominant-colors-grid">
             <div 
-              *ngFor="let color of extractedBrand()!.palette.dominantColors.slice(0, 6)"
+              *ngFor="let color of brand.palette.dominantColors.slice(0, 6)"
               class="dominant-color"
               [style.background-color]="color"
               [title]="color">
@@ -169,10 +172,11 @@ import { BrandColorExtractorService, ExtractedBrand, ColorPalette } from '../../
 
         <!-- Suggested Theme Name -->
         <div class="suggested-theme">
-          <label>💡 Nombre sugerido del tema:</label>
+          <label for="suggestedName">💡 Nombre sugerido del tema:</label>
           <input 
             type="text" 
             [(ngModel)]="suggestedName"
+            id="suggestedName"
             class="suggested-name-input"
             maxlength="50">
         </div>
@@ -716,6 +720,8 @@ import { BrandColorExtractorService, ExtractedBrand, ColorPalette } from '../../
   `]
 })
 export class BrandIntegrationComponent {
+  brandExtractor = inject(BrandColorExtractorService);
+
   
   @Output() paletteApplied = new EventEmitter<ColorPalette>();
   @Output() brandSaved = new EventEmitter<ExtractedBrand>();
@@ -737,7 +743,7 @@ export class BrandIntegrationComponent {
   extractedBrand = signal<ExtractedBrand | null>(null);
   extractionError = signal<string>('');
 
-  constructor(public brandExtractor: BrandColorExtractorService) {}
+ 
 
   // File handling methods
   onFileSelected(event: Event) {
@@ -829,18 +835,19 @@ export class BrandIntegrationComponent {
     try {
       this.clearError();
       await this.extractColorsFromUrl();
-    } catch (error) {
+    } catch (_error) {
       this.extractionError.set('Error al cargar la imagen desde la URL.');
     }
   }
 
   // Color extraction methods
   private async extractColorsFromFile() {
-    if (!this.selectedFile()) return;
+    const file = this.selectedFile();
+    if (!file) return;
 
     try {
       const extractedBrand = await this.brandExtractor.extractColorsFromLogo(
-        this.selectedFile()!,
+        file,
         this.brandName
       );
       
@@ -848,7 +855,7 @@ export class BrandIntegrationComponent {
       this.suggestedName = extractedBrand.suggestedThemeName;
       this.clearError();
       
-    } catch (error) {
+    } catch (_error) {
       this.extractionError.set('Error al extraer colores del logo. Por favor intenta con otra imagen.');
     }
   }
@@ -864,7 +871,7 @@ export class BrandIntegrationComponent {
       this.suggestedName = extractedBrand.suggestedThemeName;
       this.clearError();
       
-    } catch (error) {
+    } catch (_error) {
       this.extractionError.set('Error al extraer colores desde la URL. Verifica que la imagen sea accesible.');
     }
   }

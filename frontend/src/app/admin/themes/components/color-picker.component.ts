@@ -25,7 +25,11 @@ const COLOR_PALETTES = {
         <div 
           class="color-preview" 
           [style.background-color]="value"
-          (click)="togglePalette()">
+          role="button"
+          tabindex="0"
+          (click)="togglePalette()"
+          (keydown.enter)="togglePalette()"
+          (keydown.space)="$event.preventDefault(); togglePalette()">
         </div>
         <input 
           type="text" 
@@ -52,7 +56,10 @@ const COLOR_PALETTES = {
               class="color-swatch"
               [style.background-color]="color"
               [title]="color"
-              (click)="selectColor(color)">
+              (click)="selectColor(color)"
+              (keydown.enter)="selectColor(color)"
+              (keydown.space)="$event.preventDefault(); selectColor(color)"
+              tabindex="0">
             </button>
           </div>
         </div>
@@ -66,7 +73,10 @@ const COLOR_PALETTES = {
               class="color-swatch"
               [style.background-color]="color"
               [title]="color"
-              (click)="selectColor(color)">
+              (click)="selectColor(color)"
+              (keydown.enter)="selectColor(color)"
+              (keydown.space)="$event.preventDefault(); selectColor(color)"
+              tabindex="0">
             </button>
           </div>
         </div>
@@ -101,7 +111,9 @@ const COLOR_PALETTES = {
       <div 
         *ngIf="showPalette()" 
         class="palette-overlay"
-        (click)="closePalette()">
+        role="button" tabindex="0"
+        (click)="closePalette()"
+        (keydown.enter)="closePalette()">
       </div>
 
     </div>
@@ -300,8 +312,8 @@ const COLOR_PALETTES = {
 })
 export class ColorPickerComponent {
   @Input() value: string | null = null;
-  @Input() placeholder: string = '#ffffff';
-  @Input() label: string = '';
+  @Input() placeholder = '#ffffff';
+  @Input() label = '';
   
   @Output() valueChange = new EventEmitter<string>();
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter, signal, computed } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ThemeMarketplaceService, MarketplaceTheme, MarketplaceFilters } from '../../../shared/theme-marketplace.service';
@@ -78,8 +78,9 @@ import { ActiveTheme } from '../../../shared/theme.service';
         <!-- Advanced Filters -->
         <div class="advanced-filters" [class.expanded]="showAdvancedFilters()">
           <div class="filter-group">
-            <label>Rating mínimo:</label>
+            <span>Rating mínimo:</span>
             <select 
+              id="minRating"
               [(ngModel)]="filters.minRating"
               (change)="applyFilters()"
               class="rating-select">
@@ -91,7 +92,7 @@ import { ActiveTheme } from '../../../shared/theme.service';
           </div>
 
           <div class="filter-group">
-            <label>Tags populares:</label>
+            <span>Tags populares:</span>
             <div class="tag-filters">
               <button 
                 *ngFor="let tag of marketplaceService.popularTags"
@@ -113,6 +114,9 @@ import { ActiveTheme } from '../../../shared/theme.service';
           <div 
             *ngFor="let theme of featuredThemes()"
             class="featured-theme-card"
+            role="button"
+            tabindex="0"
+            (keydown.enter)="selectTheme(theme)"
             (click)="selectTheme(theme)">
             <div class="theme-screenshot">
               <img 
@@ -134,7 +138,7 @@ import { ActiveTheme } from '../../../shared/theme.service';
                   ⬇️ {{ formatNumber(theme.downloads) }}
                 </span>
                 <span class="price" *ngIf="theme.premium">
-                  💰 ${{ theme.price }}
+                  💰 {{ '$' + (theme.price || 0) }}
                 </span>
                 <span class="free-badge" *ngIf="!theme.premium">GRATIS</span>
               </div>
@@ -192,6 +196,9 @@ import { ActiveTheme } from '../../../shared/theme.service';
             *ngFor="let theme of filteredThemes()"
             class="theme-card"
             [class.premium]="theme.premium"
+            role="button"
+            tabindex="0"
+            (keydown.enter)="selectTheme(theme)"
             (click)="selectTheme(theme)">
             
             <div class="theme-screenshot">
@@ -216,7 +223,7 @@ import { ActiveTheme } from '../../../shared/theme.service';
               <div class="theme-header">
                 <h5 class="theme-title">{{ theme.name }}</h5>
                 <div class="theme-price">
-                  <span *ngIf="theme.premium">${{ theme.price }}</span>
+                  <span *ngIf="theme.premium">{{ '$' + (theme.price || 0) }}</span>
                   <span *ngIf="!theme.premium" class="free-text">GRATIS</span>
                 </div>
               </div>
@@ -279,7 +286,7 @@ import { ActiveTheme } from '../../../shared/theme.service';
 
       <!-- Theme Details Modal -->
       <div class="theme-modal" [class.visible]="selectedTheme()" *ngIf="selectedTheme()">
-        <div class="modal-backdrop" (click)="closeModal()"></div>
+        <div class="modal-backdrop" role="button" tabindex="0" (keydown.enter)="closeModal()" (click)="closeModal()"></div>
         <div class="modal-content">
           <div class="modal-header">
             <h3>{{ selectedTheme()!.name }}</h3>
@@ -925,7 +932,7 @@ export class ThemeMarketplaceComponent implements OnInit {
   // Loading state
   isLoading = signal(false);
 
-  constructor(public marketplaceService: ThemeMarketplaceService) {}
+  marketplaceService = inject(ThemeMarketplaceService);
 
   ngOnInit() {
     this.loadThemes();

@@ -1,10 +1,11 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { ThemeService, ActiveTheme } from '../../shared/theme.service';
+import { getIdFromResponse } from '../../shared/http-utils';
 import { ColorPickerComponent } from './components/color-picker.component';
 import { FontSelectorComponent } from './components/font-selector.component';
 import { BrandIntegrationComponent } from './components/brand-integration.component';
@@ -58,7 +59,7 @@ const THEME_CATEGORIES = [
             <button 
               class="btn-save"
               (click)="saveTheme()"
-              [disabled]="saving()">
+              [disabled]="saving() || !isThemeValid()">
               💾 {{ saving() ? 'Saving...' : 'Save Changes' }}
             </button>
           </div>
@@ -105,57 +106,113 @@ const THEME_CATEGORIES = [
               <h3>🎨 Colors</h3>
               <div class="color-grid">
                 <div class="color-group">
-                  <label>Primary</label>
+                  <span>Primary</span>
                   <app-color-picker
-                    [value]="workingTheme.primaryColor"
+                    [value]="workingTheme.primaryColor ?? null"
                     (valueChange)="workingTheme.primaryColor = $event; onColorChange()"
                     placeholder="#2563eb">
                   </app-color-picker>
+                  <small class="error-text" *ngIf="!isColorFieldValid('primaryColor')">Formato inválido. Usa #RGB o #RRGGBB.</small>
                 </div>
 
                 <div class="color-group">
-                  <label>Secondary</label>
+                  <span>Secondary</span>
                   <app-color-picker
-                    [value]="workingTheme.secondaryColor"
+                    [value]="workingTheme.secondaryColor ?? null"
                     (valueChange)="workingTheme.secondaryColor = $event; onColorChange()"
                     placeholder="#64748b">
                   </app-color-picker>
+                  <small class="error-text" *ngIf="!isColorFieldValid('secondaryColor')">Formato inválido. Usa #RGB o #RRGGBB.</small>
                 </div>
 
                 <div class="color-group">
-                  <label>Accent</label>
+                  <span>Accent</span>
                   <app-color-picker
-                    [value]="workingTheme.accentColor"
+                    [value]="workingTheme.accentColor ?? null"
                     (valueChange)="workingTheme.accentColor = $event; onColorChange()"
                     placeholder="#f59e0b">
                   </app-color-picker>
+                  <small class="error-text" *ngIf="!isColorFieldValid('accentColor')">Formato inválido. Usa #RGB o #RRGGBB.</small>
                 </div>
 
                 <div class="color-group">
-                  <label>Surface</label>
+                  <span>Surface</span>
                   <app-color-picker
-                    [value]="workingTheme.surfaceColor"
+                    [value]="workingTheme.surfaceColor ?? null"
                     (valueChange)="workingTheme.surfaceColor = $event; onColorChange()"
                     placeholder="#ffffff">
                   </app-color-picker>
+                  <small class="error-text" *ngIf="!isColorFieldValid('surfaceColor')">Formato inválido. Usa #RGB o #RRGGBB.</small>
                 </div>
 
                 <div class="color-group">
-                  <label>Text</label>
+                  <span>Surface Alt</span>
                   <app-color-picker
-                    [value]="workingTheme.textColor"
+                    [value]="workingTheme.surfaceAltColor ?? null"
+                    (valueChange)="workingTheme.surfaceAltColor = $event; onColorChange()"
+                    placeholder="#f8fafc">
+                  </app-color-picker>
+                  <small class="error-text" *ngIf="!isColorFieldValid('surfaceAltColor')">Formato inválido. Usa #RGB o #RRGGBB.</small>
+                </div>
+
+                <div class="color-group">
+                  <span>Text</span>
+                  <app-color-picker
+                    [value]="workingTheme.textColor ?? null"
                     (valueChange)="workingTheme.textColor = $event; onColorChange()"
                     placeholder="#1e293b">
                   </app-color-picker>
+                  <small class="error-text" *ngIf="!isColorFieldValid('textColor')">Formato inválido. Usa #RGB o #RRGGBB.</small>
                 </div>
 
                 <div class="color-group">
-                  <label>Border</label>
+                  <span>Text Secondary</span>
                   <app-color-picker
-                    [value]="workingTheme.borderColor"
+                    [value]="workingTheme.textSecondary ?? null"
+                    (valueChange)="workingTheme.textSecondary = $event; onColorChange()"
+                    placeholder="#64748b">
+                  </app-color-picker>
+                  <small class="error-text" *ngIf="!isColorFieldValid('textSecondary')">Formato inválido. Usa #RGB o #RRGGBB.</small>
+                </div>
+
+                <div class="color-group">
+                  <span>Border</span>
+                  <app-color-picker
+                    [value]="workingTheme.borderColor ?? null"
                     (valueChange)="workingTheme.borderColor = $event; onColorChange()"
                     placeholder="#e2e8f0">
                   </app-color-picker>
+                  <small class="error-text" *ngIf="!isColorFieldValid('borderColor')">Formato inválido. Usa #RGB o #RRGGBB.</small>
+                </div>
+
+                <div class="color-group">
+                  <span>Error</span>
+                  <app-color-picker
+                    [value]="workingTheme.errorColor ?? null"
+                    (valueChange)="workingTheme.errorColor = $event; onColorChange()"
+                    placeholder="#dc2626">
+                  </app-color-picker>
+                  <small class="error-text" *ngIf="!isColorFieldValid('errorColor')">Formato inválido. Usa #RGB o #RRGGBB.</small>
+                </div>
+
+                <div class="color-group">
+                  <span>Success</span>
+                  <app-color-picker
+                    [value]="workingTheme.successColor ?? null"
+                    (valueChange)="workingTheme.successColor = $event; onColorChange()"
+                    placeholder="#16a34a">
+                  </app-color-picker>
+                  <small class="error-text" *ngIf="!isColorFieldValid('successColor')">Formato inválido. Usa #RGB o #RRGGBB.</small>
+                </div>
+
+                <div class="color-group">
+                  <span>Warning</span>
+                  <app-color-picker
+                    [value]="workingTheme.warningColor ?? null"
+                    (valueChange)="workingTheme.warningColor = $event; onColorChange()"
+                    placeholder="#d97706">
+                  </app-color-picker>
+                  <small class="error-text" *ngIf="!isColorFieldValid('warningColor')">Formato inválido. Usa #RGB o #RRGGBB.</small>
                 </div>
               </div>
             </section>
@@ -165,25 +222,25 @@ const THEME_CATEGORIES = [
               <h3>📝 Typography</h3>
               <div class="typography-controls">
                 <div class="control-group">
-                  <label>Heading Font</label>
+                  <span>Heading Font</span>
                   <app-font-selector
-                    [selectedFont]="workingTheme.fontHeading"
+                    [selectedFont]="workingTheme.fontHeading ?? null"
                     (fontSelected)="onHeadingFontChange($event)"
                     placeholder="Select heading font">
                   </app-font-selector>
                 </div>
 
                 <div class="control-group">
-                  <label>Body Font</label>
+                  <span>Body Font</span>
                   <app-font-selector
-                    [selectedFont]="workingTheme.fontBody"
+                    [selectedFont]="workingTheme.fontBody ?? null"
                     (fontSelected)="onBodyFontChange($event)"
                     placeholder="Select body font">
                   </app-font-selector>
                 </div>
 
                 <div class="control-group">
-                  <label>Base Size</label>
+                  <span>Base Size</span>
                   <select 
                     [(ngModel)]="workingTheme.fontSizeBase"
                     (change)="onTypographyChange()"
@@ -196,7 +253,7 @@ const THEME_CATEGORIES = [
                 </div>
 
                 <div class="control-group">
-                  <label>Scale Ratio</label>
+                  <span>Scale Ratio</span>
                   <input 
                     type="range" 
                     min="1.1" 
@@ -215,7 +272,7 @@ const THEME_CATEGORIES = [
               <h3>📐 Layout</h3>
               <div class="layout-controls">
                 <div class="control-group">
-                  <label>Container Width</label>
+                  <span>Container Width</span>
                   <select 
                     [(ngModel)]="workingTheme.containerWidth"
                     (change)="onLayoutChange()"
@@ -228,7 +285,7 @@ const THEME_CATEGORIES = [
                 </div>
 
                 <div class="control-group">
-                  <label>Border Radius</label>
+                  <span>Border Radius</span>
                   <select 
                     [(ngModel)]="workingTheme.borderRadius"
                     (change)="onLayoutChange()"
@@ -242,7 +299,7 @@ const THEME_CATEGORIES = [
                 </div>
 
                 <div class="control-group">
-                  <label>Spacing</label>
+                  <span>Spacing</span>
                   <select 
                     [(ngModel)]="workingTheme.spacingUnit"
                     (change)="onLayoutChange()"
@@ -261,7 +318,7 @@ const THEME_CATEGORIES = [
               <h3>🧩 Components</h3>
               <div class="component-controls">
                 <div class="control-group">
-                  <label>Button Style</label>
+                  <span>Button Style</span>
                   <div class="style-options">
                     <button 
                       *ngFor="let style of buttonStyles" 
@@ -274,7 +331,7 @@ const THEME_CATEGORIES = [
                 </div>
 
                 <div class="control-group">
-                  <label>Card Style</label>
+                  <span>Card Style</span>
                   <div class="style-options">
                     <button 
                       *ngFor="let style of cardStyles" 
@@ -287,7 +344,7 @@ const THEME_CATEGORIES = [
                 </div>
 
                 <div class="control-group">
-                  <label>Shadow Style</label>
+                  <span>Shadow Style</span>
                   <div class="style-options">
                     <button 
                       *ngFor="let style of shadowStyles" 
@@ -312,7 +369,7 @@ const THEME_CATEGORIES = [
             <!-- Theme Export Section -->
             <section class="customizer-section export-section">
               <app-theme-export
-                [theme]="workingThemeSignal">
+                [theme]="workingThemeSignal()">
               </app-theme-export>
             </section>
 
@@ -925,6 +982,14 @@ const THEME_CATEGORIES = [
         opacity: 0;
       }
     }
+
+    /* Error text */
+    .error-text {
+      color: #dc2626;
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      display: inline-block;
+    }
   `]
 })
 export class ThemeCustomizerComponent implements OnInit, OnDestroy {
@@ -967,6 +1032,30 @@ export class ThemeCustomizerComponent implements OnInit, OnDestroy {
     ).subscribe(() => {
       this.applyPreview();
     });
+  }
+
+  // Validaciones locales (colores y rangos numéricos)
+  private readonly hex3 = /^#([0-9a-fA-F]{3})$/;
+  private readonly hex6 = /^#([0-9a-fA-F]{6})$/;
+  private readonly colorKeys: Array<keyof ActiveTheme> = [
+    'primaryColor','secondaryColor','accentColor','surfaceColor','surfaceAltColor','textColor','textSecondary','borderColor','errorColor','successColor','warningColor'
+  ];
+
+  isColorFieldValid(key: keyof ActiveTheme): boolean {
+    const v = this.workingTheme[key] as unknown;
+    if (v == null || v === '') return true; // vacío permitido
+    if (typeof v !== 'string') return false;
+    const s = v.trim();
+    return this.hex6.test(s) || this.hex3.test(s);
+  }
+
+  isThemeValid(): boolean {
+    const colorsOk = this.colorKeys.every((k) => this.isColorFieldValid(k));
+    const ratio = Number(this.workingTheme.fontScaleRatio);
+    const lh = Number(this.workingTheme.lineHeightBase);
+    const ratioOk = !Number.isFinite(ratio) || (ratio >= 1 && ratio <= 2);
+    const lhOk = !Number.isFinite(lh) || (lh >= 1 && lh <= 3);
+    return colorsOk && ratioOk && lhOk;
   }
 
   ngOnInit() {
@@ -1020,8 +1109,8 @@ export class ThemeCustomizerComponent implements OnInit, OnDestroy {
   async loadAvailableThemes() {
     this.loading.set(true);
     try {
-      const response = await this.http.get<any>('/api/admin/themes').toPromise();
-      const themes = response?.data || response || [];
+  const response = await this.http.get<{ data?: ActiveTheme[] } | ActiveTheme[]>('/api/admin/themes').toPromise();
+  const themes = Array.isArray(response) ? response : (response?.data ?? []);
       this.availableThemes.set(themes);
     } catch (error) {
       console.error('Failed to load themes:', error);
@@ -1033,7 +1122,7 @@ export class ThemeCustomizerComponent implements OnInit, OnDestroy {
   async loadPredefinedThemes() {
     this.loading.set(true);
     try {
-      await this.http.post<any>('/api/admin/themes/predefined', {}).toPromise();
+  await this.http.post<unknown>('/api/admin/themes/predefined', {}).toPromise();
       await this.loadAvailableThemes();
     } catch (error) {
       console.error('Failed to create predefined themes:', error);
@@ -1127,7 +1216,7 @@ export class ThemeCustomizerComponent implements OnInit, OnDestroy {
     localStorage.setItem('tempAnimations', JSON.stringify(animations));
   }
 
-  onAnimationsApplied(animations: ThemeAnimations) {
+  onAnimationsApplied(_animations: ThemeAnimations) {
     // Apply animations to the working theme
     // Since animations are managed separately, we just show success
     this.showSuccessMessage('¡Configuración de animaciones aplicada!');
@@ -1195,22 +1284,74 @@ export class ThemeCustomizerComponent implements OnInit, OnDestroy {
   async saveTheme() {
     this.saving.set(true);
     try {
-      const themeData = { ...this.workingTheme };
-      delete (themeData as any).isPreview;
+  // Construir payload permitido por el DTO del backend
+  const allowedKeys = [
+    'name','description','category',
+    // colors
+    'primaryColor','secondaryColor','accentColor','surfaceColor','surfaceAltColor','textColor','textSecondary','borderColor','errorColor','successColor','warningColor',
+    // typography
+  'fontHeading','fontBody','fontSizeBase','fontScaleRatio','lineHeightBase',
+    // layout
+    'containerWidth','spacingUnit','borderRadius',
+    // components/enums
+    'headerStyle','footerStyle','buttonStyle','cardStyle','shadowStyle',
+    // advanced
+    'animationSpeed','customCss','previewImage',
+    // flag para activar en update
+    'setActive'
+  ] as const;
+  const themeData = Object.fromEntries(
+    Object.entries(this.workingTheme).filter(([k]) => (allowedKeys as readonly string[]).includes(k))
+  ) as Record<string, unknown>;
 
-      let response;
-      if (this.selectedThemeId) {
-        // Update existing theme
-        response = await this.http.put<any>(`/api/admin/themes/${this.selectedThemeId}`, {
-          ...themeData,
-          setActive: true
-        }).toPromise();
-      } else {
+  // Normalizar colores a formato #RRGGBB si el usuario ingres #RGB
+  const hexFields = [
+    'primaryColor','secondaryColor','accentColor','surfaceColor','surfaceAltColor','textColor','textSecondary','borderColor','errorColor','successColor','warningColor'
+  ] as const;
+  const normalizeHex6 = (v: unknown): string | undefined => {
+    if (typeof v !== 'string') return undefined;
+    const s = v.trim();
+    const short = /^#([0-9a-fA-F]{3})$/;
+    const long = /^#([0-9a-fA-F]{6})$/;
+    if (long.test(s)) return s;
+    const m = s.match(short);
+    if (m) {
+      const [r,g,b] = m[1].split('');
+      return `#${r}${r}${g}${g}${b}${b}`;
+    }
+    return s; // dejar tal cual; el backend validar
+  };
+  for (const k of hexFields) {
+    if (k in themeData) {
+      const n = normalizeHex6(themeData[k]);
+      if (n) themeData[k] = n;
+    }
+  }
+
+  // Forzar numéricos a number (y eliminar si no son finitos)
+  const toFiniteNumber = (v: unknown) => {
+    const n = typeof v === 'string' && v.trim() === '' ? NaN : Number(v);
+    return Number.isFinite(n) ? n : undefined;
+  };
+  if ('fontScaleRatio' in themeData) {
+    const n = toFiniteNumber(themeData['fontScaleRatio']);
+    if (n === undefined) delete themeData['fontScaleRatio']; else themeData['fontScaleRatio'] = n;
+  }
+  if ('lineHeightBase' in themeData) {
+    const n = toFiniteNumber(themeData['lineHeightBase']);
+    if (n === undefined) delete themeData['lineHeightBase']; else themeData['lineHeightBase'] = n;
+  }
+
+  let response: { data?: unknown } | unknown;
+  if (this.selectedThemeId) {
+    // Update settings and activate in one step (usa endpoint dedicado)
+    response = await this.http.put<unknown>(`/api/admin/themes/${this.selectedThemeId}/settings-activate`, themeData).toPromise();
+  } else {
         // Create new theme
-        response = await this.http.post<any>('/api/admin/themes', themeData).toPromise();
-        if (response?.data?.[1]) {
-          // If transaction response, activate the theme
-          await this.http.put<any>(`/api/admin/themes/${response.data[1].id}/activate`, {}).toPromise();
+  response = await this.http.post<{ data?: unknown } | unknown>('/api/admin/themes', themeData).toPromise();
+  const createdId = getIdFromResponse(response);
+        if (createdId) {
+          await this.http.put<unknown>(`/api/admin/themes/${createdId}/activate`, {}).toPromise();
         }
       }
 
@@ -1218,7 +1359,7 @@ export class ThemeCustomizerComponent implements OnInit, OnDestroy {
       this.themeService.load();
       this.previewMode.set(false);
       
-      console.log('Theme saved successfully!');
+  console.warn('Theme saved successfully!');
     } catch (error) {
       console.error('Failed to save theme:', error);
     } finally {

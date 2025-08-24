@@ -4,7 +4,7 @@
  * updated by the ThemeService based on the active theme settings.
  */
 
-:root {
+[data-theme-scope] {
   /* Color System */
   --theme-primary: #2563eb;
   --theme-secondary: #64748b;
@@ -17,6 +17,17 @@
   --theme-error: #dc2626;
   --theme-success: #16a34a;
   --theme-warning: #d97706;
+
+  /* Tailwind alias tokens (compatibilidad con bg-bg-app, text-text-app, etc.) */
+  --color-primary: var(--theme-primary);
+  --color-secondary: var(--theme-secondary);
+  --color-accent: var(--theme-accent);
+  --color-bg: var(--theme-surface);
+  --color-surface: var(--theme-surface);
+  --color-surface-alt: var(--theme-surface-alt);
+  --color-text: var(--theme-text);
+  --color-text-secondary: var(--theme-text-secondary);
+  --color-border: var(--theme-border);
   
   /* Typography System */
   --theme-font-heading: 'Inter', sans-serif;
@@ -91,12 +102,14 @@
 }
 
 /* Dark mode adjustments */
-.dark {
+[data-theme-scope].dark {
   --theme-surface: #1f2937;
   --theme-surface-alt: #111827;
   --theme-text: #f9fafb;
   --theme-text-secondary: #d1d5db;
   --theme-border: #374151;
+
+  /* Alias también reflejan dark mode automáticamente vía referencias */
 }
 
 /* Theme transition animation */

@@ -1,4 +1,4 @@
-import { Component, Input, signal } from '@angular/core';
+import { Component, Input, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ThemeExportService, ExportOptions } from '../../../shared/theme-export.service';
@@ -176,7 +176,7 @@ import { ActiveTheme } from '../../../shared/theme.service';
               type="button" 
               class="btn-export primary"
               (click)="exportSingleFile()"
-              [disabled]="!theme()">
+              [disabled]="!theme">
               📄 Descargar CSS
             </button>
             
@@ -184,7 +184,7 @@ import { ActiveTheme } from '../../../shared/theme.service';
               type="button" 
               class="btn-export"
               (click)="generatePreview()"
-              [disabled]="!theme()">
+              [disabled]="!theme">
               👁️ Generar Vista Previa
             </button>
           </div>
@@ -198,7 +198,7 @@ import { ActiveTheme } from '../../../shared/theme.service';
               type="button" 
               class="btn-export primary"
               (click)="exportPackage()"
-              [disabled]="!theme()">
+              [disabled]="!theme">
               📦 Descargar Paquete
             </button>
           </div>
@@ -720,8 +720,8 @@ import { ActiveTheme } from '../../../shared/theme.service';
   `]
 })
 export class ThemeExportComponent {
-  
-  @Input() theme = signal<ActiveTheme | null>(null);
+
+  @Input() theme: ActiveTheme | null = null;
 
   exportOptions: ExportOptions = {
     includeAnimations: true,
@@ -744,10 +744,10 @@ export class ThemeExportComponent {
     { id: 'angular', label: 'Angular' }
   ];
 
-  constructor(private themeExportService: ThemeExportService) {}
+  private themeExportService = inject(ThemeExportService);
 
   exportSingleFile() {
-    const currentTheme = this.theme();
+    const currentTheme = this.theme;
     if (!currentTheme) return;
 
     this.themeExportService.downloadThemeCSS(
@@ -760,7 +760,7 @@ export class ThemeExportComponent {
   }
 
   exportPackage() {
-    const currentTheme = this.theme();
+    const currentTheme = this.theme;
     if (!currentTheme) return;
 
     this.themeExportService.downloadThemePackage(currentTheme, this.exportOptions);
@@ -768,7 +768,7 @@ export class ThemeExportComponent {
   }
 
   generatePreview() {
-    const currentTheme = this.theme();
+    const currentTheme = this.theme;
     if (!currentTheme) return;
 
     const themeExport = this.themeExportService.exportThemeCSS(currentTheme, this.exportOptions);
@@ -861,7 +861,7 @@ function MyComponent() {
   }
 
   getEstimatedSize(): string {
-    const currentTheme = this.theme();
+    const currentTheme = this.theme;
     if (!currentTheme) return '0 KB';
 
     const themeExport = this.themeExportService.exportThemeCSS(currentTheme, this.exportOptions);
@@ -888,7 +888,7 @@ function MyComponent() {
   }
 
   private generateFileName(): string {
-    const currentTheme = this.theme();
+    const currentTheme = this.theme;
     if (!currentTheme) return 'theme.css';
 
     const baseName = currentTheme.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
