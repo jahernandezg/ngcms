@@ -191,9 +191,8 @@ export class ThemesService {
         primaryColor: '#2563eb',
         secondaryColor: '#64748b',
         accentColor: '#3b82f6',
-        backgroundColor: '#ffffff',
-        surfaceColor: '#f8fafc',
-        surfaceAltColor: '#f1f5f9',
+        surfaceColor: '#ffffff',
+        surfaceAltColor: '#f8fafc',
         textColor: '#1e293b',
         textSecondary: '#64748b',
         borderColor: '#e2e8f0',
@@ -219,7 +218,7 @@ export class ThemesService {
         primaryColor: '#1f2937',
         secondaryColor: '#4b5563',
         accentColor: '#d97706',
-        backgroundColor: '#fefefe',
+
         surfaceColor: '#f9fafb',
         surfaceAltColor: '#f3f4f6',
         textColor: '#111827',
@@ -248,7 +247,7 @@ export class ThemesService {
         primaryColor: '#1e40af',
         secondaryColor: '#374151',
         accentColor: '#f59e0b',
-        backgroundColor: '#ffffff',
+
         surfaceColor: '#f8fafc',
         surfaceAltColor: '#f1f5f9',
         textColor: '#1f2937',
@@ -276,7 +275,7 @@ export class ThemesService {
         primaryColor: '#3b82f6',
         secondaryColor: '#6b7280',
         accentColor: '#10b981',
-        backgroundColor: '#0f172a',
+
         surfaceColor: '#1e293b',
         surfaceAltColor: '#334155',
         textColor: '#f8fafc',
@@ -305,7 +304,7 @@ export class ThemesService {
         primaryColor: '#7c3aed',
         secondaryColor: '#6b7280',
         accentColor: '#f59e0b',
-        backgroundColor: '#ffffff',
+
         surfaceColor: '#fafafa',
         surfaceAltColor: '#f5f5f5',
         textColor: '#18181b',
@@ -333,7 +332,7 @@ export class ThemesService {
         primaryColor: '#ec4899',
         secondaryColor: '#8b5cf6',
         accentColor: '#06b6d4',
-        backgroundColor: '#fafafa',
+
         surfaceColor: '#ffffff',
         surfaceAltColor: '#f4f4f5',
         textColor: '#27272a',
@@ -362,7 +361,7 @@ export class ThemesService {
         primaryColor: '#374151',
         secondaryColor: '#6b7280',
         accentColor: '#10b981',
-        backgroundColor: '#ffffff',
+
         surfaceColor: '#fefefe',
         surfaceAltColor: '#f9fafb',
         textColor: '#111827',
@@ -390,7 +389,7 @@ export class ThemesService {
         primaryColor: '#dc2626',
         secondaryColor: '#374151',
         accentColor: '#f59e0b',
-        backgroundColor: '#ffffff',
+
         surfaceColor: '#f8fafc',
         surfaceAltColor: '#f1f5f9',
         textColor: '#1f2937',
@@ -419,7 +418,7 @@ export class ThemesService {
         primaryColor: '#059669',
         secondaryColor: '#4b5563',
         accentColor: '#f59e0b',
-        backgroundColor: '#ffffff',
+
         surfaceColor: '#f9fafb',
         surfaceAltColor: '#f3f4f6',
         textColor: '#1f2937',
@@ -448,7 +447,7 @@ export class ThemesService {
         primaryColor: '#6366f1',
         secondaryColor: '#64748b',
         accentColor: '#f59e0b',
-        backgroundColor: '#ffffff',
+
         surfaceColor: '#f8fafc',
         surfaceAltColor: '#f1f5f9',
         textColor: '#1e293b',
@@ -477,7 +476,7 @@ export class ThemesService {
         primaryColor: '#000000',
         secondaryColor: '#525252',
         accentColor: '#737373',
-        backgroundColor: '#ffffff',
+
         surfaceColor: '#fefefe',
         surfaceAltColor: '#fafafa',
         textColor: '#0a0a0a',
@@ -506,7 +505,7 @@ export class ThemesService {
         primaryColor: '#0ea5e9',
         secondaryColor: '#475569',
         accentColor: '#8b5cf6',
-        backgroundColor: '#f8fafc',
+
         surfaceColor: '#ffffff',
         surfaceAltColor: '#f1f5f9',
         textColor: '#0f172a',

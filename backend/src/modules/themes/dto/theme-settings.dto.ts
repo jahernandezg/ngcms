@@ -69,6 +69,21 @@ export class CreateThemeDto {
   @IsString()
   borderColor?: string;
 
+  @ApiPropertyOptional({ description: 'Color de error (hex)', default: '#dc2626' })
+  @IsOptional()
+  @IsString()
+  errorColor?: string;
+
+  @ApiPropertyOptional({ description: 'Color de éxito (hex)', default: '#16a34a' })
+  @IsOptional()
+  @IsString()
+  successColor?: string;
+
+  @ApiPropertyOptional({ description: 'Color de advertencia (hex)', default: '#d97706' })
+  @IsOptional()
+  @IsString()
+  warningColor?: string;
+
   // Typography
   @ApiPropertyOptional({ description: 'Fuente para títulos', default: 'Inter' })
   @IsOptional()
