@@ -8,7 +8,7 @@ import {
   CardStyle, 
   ShadowStyle 
 } from '../enums/theme.enums';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 export class CreateThemeDto {
   @ApiProperty({ description: 'Nombre del theme' })
@@ -169,7 +169,7 @@ export class CreateThemeDto {
   previewImage?: string;
 }
 
-export class UpdateThemeDto extends CreateThemeDto {
+export class UpdateThemeDto extends PartialType(CreateThemeDto) {
   @ApiPropertyOptional({ description: 'Si el theme debe activarse inmediatamente' })
   @IsOptional()
   @IsBoolean()
