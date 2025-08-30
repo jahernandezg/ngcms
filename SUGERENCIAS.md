@@ -67,6 +67,62 @@ Este documento lista mejoras concretas y priorizadas para el monorepo Nx (Angula
 - Caching de consultas calientes: Redis opcional (e.g., lista home, related posts, sugerencias).
 - Migraciones seguras: `prisma migrate deploy` en arranque + backups antes de cambios.
 
+## Caché público por escritura (plan futuro)
+
+Objetivo: minimizar lecturas a BD en la parte pública (blog) cacheando en el momento de escribir/actualizar y sirviendo desde cache para anónimos. Aplica a: páginas, posts, taxonomías (categorías/tags), menú y theme activo.
+
+- Store recomendado: Redis gestionado (Upstash/Fly Valkey). Para MVP se puede iniciar con LRU en memoria (solo 1 réplica) y migrar a Redis sin cambiar consumidores.
+- Patrón: read‑through + invalidación selectiva en escritura.
+  - Lecturas: intentar cache → si falta, leer BD, serializar DTO y `set` en cache.
+  - Escrituras (create/update/publish/unpublish/delete): confirmar BD → invalidar claves/grupos afectados → opcional “precalentar” vistas comunes.
+- TTL: opcional. Con invalidación correcta, TTL largo o sin TTL; para listados, TTL corto (1–5 min) es aceptable si no se quiere precalentado.
+
+Claves sugeridas (prefijo `cms:`):
+
+- `post:slug:{slug}` y `page:slug:{slug}`
+- Listas: `list:home:{qhash}`, `list:category:{slug}:{page}`, `list:tag:{slug}:{page}`
+- Taxonomías: `cat:{slug}`, `tag:{slug}`, `cats:all`, `tags:all`
+- Menú: `menu:main`
+- Theme activo: `theme:active`
+
+Grupos de invalidación (sets que contienen las claves a borrar):
+
+- `group:post:{id}`
+- `group:category:{slug}` y `group:tag:{slug}`
+- `group:menu`
+- `group:theme`
+
+Triggers de invalidación (ejemplos):
+
+- Post (crear/editar/publicar/despublicar/eliminar): borrar `group:post:{id}`; borrar listas relacionadas `list:home:*`, `list:category:{catSlug}:*`, `list:tag:{tagSlug}:*`. Precalentar detalle (`post:slug:{slug}`) y primera página de listas si procede.
+- Categoría/Tag actualizados: borrar `group:category:{slug}` o `group:tag:{slug}` y sus listas.
+- Menú actualizado: borrar `menu:main`.
+- Theme activado: borrar `theme:active` (y asegurar propagación de CSS tokens en FE público).
+
+Headers HTTP recomendados (mejoran CDN):
+
+- SSR HTML para usuarios anónimos: `Cache-Control: public, s-maxage=60, stale-while-revalidate=300`.
+- API públicas GET: habilitar `ETag` y `Cache-Control: public, s-maxage=60-120`.
+- Admin/autenticadas: `Cache-Control: no-store`.
+
+Implementación propuesta (Nest):
+
+- Módulo de cache con `cache-manager` y store Redis (`cache-manager-redis-yet`), configurable por env `REDIS_URL`; fallback a LRU en memoria para desarrollo/single replica.
+- `CacheService` con helpers: `getJSON<T>(k)`, `setJSON(k,v,ttl?)`, `del(k)`, `addToGroup(group,k)`, `invalidateGroup(group)`, `delPattern(pat)`.
+- Integración en servicios de dominio (Posts/Pages/Taxonomy/Menu/Theme): read‑through en `get*`, invalidación y precalentado en `create/update/delete/publish`.
+- Opcional: eventos (`EventEmitter2`) `PostUpdated`, `MenuUpdated`, `ThemeActivated` para centralizar invalidación/precalentado.
+
+SSR (Angular) y estáticos:
+
+- Mantener estáticos con caché fuerte (hash en nombres) — ya está en SSR actual.
+- Añadir micro‑cache en SSR HTML (30–60s por URL) activable por env (`SSR_MICROCACHE=1`).
+
+Definición de Hecho (DoD):
+
+- Toggleable por entorno (`REDIS_URL` ausente → fallback memoria; presencia → Redis) sin cambios en consumidores.
+- Pruebas: lecturas desde cache tras primer hit; invalidación consistente post‑update; headers adecuados en rutas públicas.
+- Observabilidad: métrica de aciertos/fallos de cache y latencia percibida; logs de invalidación.
+
 ## Seguridad
 
 - Helmet, CORS ajustado a dominios esperados, y saneamiento de inputs.

@@ -36,26 +36,35 @@ export const SEARCH_DEBOUNCE_MS = new InjectionToken<number>('SEARCH_DEBOUNCE_MS
     <section class="container mx-auto p-4">
       <h1 class="text-2xl font-semibold mb-4">Buscar</h1>
       <input class="border p-2 w-full mb-4" placeholder="Buscar..." [value]="q()" (input)="onInput($event)"/>
-  <div class="text-sm text-text-secondary mb-2" *ngIf="suggestions()?.titles?.length">Sugerencias: 
-        <button *ngFor="let s of suggestions()?.titles" class="mr-2 underline" (click)="setQ(s)" [innerHTML]="highlight(s)"></button>
-        <span *ngFor="let t of suggestions()?.tags" class="ml-2"><a [routerLink]="['/tag', t.slug]" class="underline">#{{ t.name }}</a></span>
-      </div>
-      <ng-container *ngIf="posts(); else loadingTpl">
-        <p *ngIf="posts().length === 0">Sin resultados para "{{ q() }}".</p>
-        <article *ngFor="let p of posts()" class="py-4 border-b">
-          <h2 class="text-xl font-medium"><a [routerLink]="['/post', p.slug]" class="text-primary underline" [innerHTML]="highlight(p.title)"></a></h2>
-          <p class="text-text-secondary" [innerHTML]="highlight(p.excerpt || '')"></p>
-          <small class="text-text-secondary">Por {{ p.author.name }} · {{ p.readingTime }} min</small>
-        </article>
-        <nav class="flex gap-2 mt-4" *ngIf="totalPages() > 1">
-          <button class="px-3 py-1 border rounded" [disabled]="page() === 1" (click)="prev()">Anterior</button>
-          <span>Página {{ page() }} / {{ totalPages() }}</span>
-          <button class="px-3 py-1 border rounded" [disabled]="page() >= totalPages()" (click)="next()">Siguiente</button>
-        </nav>
-      </ng-container>
-      <ng-template #loadingTpl>
+      @if (suggestions()?.titles?.length) {
+        <div class="text-sm text-text-secondary mb-2">Sugerencias:
+          @for (s of suggestions()?.titles; track s) {
+            <button class="mr-2 underline" (click)="setQ(s)" [innerHTML]="highlight(s)"></button>
+          }
+          @for (t of suggestions()?.tags; track t.slug) {
+            <span class="ml-2"><a [routerLink]="['/tag', t.slug]" class="underline">#{{ t.name }}</a></span>
+          }
+        </div>
+      }
+      @if (posts()) {
+        @if (posts().length === 0) {<p>Sin resultados para "{{ q() }}".</p>}
+        @for (p of posts(); track p.id) {
+          <article class="py-4 border-b">
+            <h2 class="text-xl font-medium"><a [routerLink]="['/post', p.slug]" class="text-primary underline" [innerHTML]="highlight(p.title)"></a></h2>
+            <p class="text-text-secondary" [innerHTML]="highlight(p.excerpt || '')"></p>
+            <small class="text-text-secondary">Por {{ p.author.name }} · {{ p.readingTime }} min</small>
+          </article>
+        }
+        @if (totalPages() > 1) {
+          <nav class="flex gap-2 mt-4">
+            <button class="px-3 py-1 border rounded" [disabled]="page() === 1" (click)="prev()">Anterior</button>
+            <span>Página {{ page() }} / {{ totalPages() }}</span>
+            <button class="px-3 py-1 border rounded" [disabled]="page() >= totalPages()" (click)="next()">Siguiente</button>
+          </nav>
+        }
+      } @else {
         <p>Cargando…</p>
-      </ng-template>
+      }
     </section>
   `,
 })
@@ -103,7 +112,7 @@ export class SearchComponent {
   readonly response = toSignal<(ApiListResponse<PostListItem> | PostListItem[]) | undefined>(
     combineLatest([this.q$, this.page$]).pipe(
       switchMap(([q, p]) =>
-  this.http.get<ApiListResponse<PostListItem> | PostListItem[]>('/api/search', {
+        this.http.get<ApiListResponse<PostListItem> | PostListItem[]>('/api/search', {
           params: new HttpParams().set('q', q).set('page', String(p)).set('limit', String(this.limit)),
         })
       )
@@ -139,8 +148,8 @@ export class SearchComponent {
     effect(() => {
       const qp = this.queryParams();
       if (!qp) return;
-  // Solo sincronizar 'q' desde la ruta si el estado local aún está vacío, para no pisar entradas posteriores del usuario
-  if (qp.q && qp.q !== this.q() && this.q().trim().length === 0) this.q.set(qp.q);
+      // Solo sincronizar 'q' desde la ruta si el estado local aún está vacío, para no pisar entradas posteriores del usuario
+      if (qp.q && qp.q !== this.q() && this.q().trim().length === 0) this.q.set(qp.q);
       if (qp.page !== this.page()) this.page.set(qp.page);
     });
 
@@ -149,7 +158,7 @@ export class SearchComponent {
       const current = this.queryParams();
       const q = this.q();
       const p = this.page();
-      if (!current || current.q === q && current.page === p) return;
+      if (!current || (current.q === q && current.page === p)) return;
       this.router.navigate([], {
         relativeTo: this.route,
         queryParams: { q, page: p !== 1 ? p : null },
@@ -175,7 +184,7 @@ export class SearchComponent {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
+  .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
   }
   highlight(text: string) {

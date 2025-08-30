@@ -1,0 +1,39 @@
+<div class="admin-body bg-gray-50 dark:bg-gray-900 flex h-screen overflow-hidden">
+  <!-- Sidebar -->
+  <app-admin-sidebar [appName]="appName" [sidebarOpen]="sidebarOpen" (logout)="logout()" class="flex-shrink-0" [ngClass]="{ 'lg:hidden': !sidebarOpen }" />
+
+  <!-- Mobile sidebar overlay -->
+  @if (sidebarOpen) {
+  <div role="button" tabindex="0" aria-label="Cerrar menú lateral" (click)="closeSidebar()"
+    (keydown.enter)="closeSidebar()" (keydown.space)="closeSidebar()"
+    class="lg:hidden fixed left-0 right-0 bottom-0 top-16 bg-gray-600 opacity-75 z-20"></div>
+  }
+
+  <div class="relative flex flex-col flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
+
+    <!-- Header -->
+  <app-admin-header [currentPageName]="currentPageName" [sidebarOpen]="sidebarOpen" (toggleSidebar)="toggleSidebar()" />
+
+
+    <main>
+      <div class="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">
+        <router-outlet />
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- Toast Container -->
+  <app-toast-container />
+
+  <!-- Loading Overlay -->
+  @if (loading.isLoading()) {
+  <div class="admin-loading-overlay" role="status" aria-live="polite">
+    <div class="admin-spinner" aria-hidden="true"></div>
+    <span class="sr-only">Cargando…</span>
+  </div>
+  }
+
+
+</div>

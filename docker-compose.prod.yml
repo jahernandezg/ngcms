@@ -1,0 +1,74 @@
+version: '3.9'
+
+# Producción sin proxy inverso interno.
+# Nginx global (en el host) debe apuntar a:
+#  - Frontend SSR: http://127.0.0.1:4000
+#  - Backend API:  http://127.0.0.1:3000
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: tools/docker/Dockerfile.backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # Conexión interna al servicio db (no al puerto del host)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-cms}?schema=public
+      NODE_ENV: production
+      # Añade aquí otras variables del backend (JWT_SECRET, CORS_ORIGINS, etc.)
+    # Exponer solo en localhost para que Nginx del host hag|a proxy
+    ports:
+      - '127.0.0.1:3000:3000'
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    build:
+      context: .
+      dockerfile: tools/docker/Dockerfile.frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # API interna por nombre de servicio (no el puerto del host)
+      API_URL: http://backend:3000/api
+      NODE_ENV: production
+    # Exponer solo en localhost para que Nginx del host haga proxy
+    ports:
+      - '127.0.0.1:4000:4000'
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:4000/ || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  db-data:

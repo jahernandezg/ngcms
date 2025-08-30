@@ -1,0 +1,21 @@
+<div [ngClass]="containerClasses()" role="alert">
+  <div class="flex items-start gap-3">
+    <div [ngClass]="iconWrapClasses()" aria-hidden="true">
+      <fa-icon [icon]="icon || defaultIcon()"></fa-icon>
+    </div>
+    <div class="flex-1">
+      <div class="flex flex-wrap items-baseline gap-x-2">
+        <span class="text-sm font-semibold">{{ title }}</span>
+      </div>
+      <p class="mt-1" [ngClass]="messageClasses()">{{ message }}</p>
+      @if (linkHref && linkText) {
+        <a class="mt-2 inline-block" [ngClass]="linkClasses()" [href]="linkHref">{{ linkText }}</a>
+      }
+    </div>
+    @if (dismissible) {
+    <button type="button" (click)="closed.emit()" class="ml-auto inline-flex h-6 w-6 items-center justify-center rounded hover:bg-black/5 dark:hover:bg-white/10 focus:outline-hidden" aria-label="Cerrar">
+      <fa-icon [icon]="xIcon"></fa-icon>
+    </button>
+    }
+  </div>
+</div>

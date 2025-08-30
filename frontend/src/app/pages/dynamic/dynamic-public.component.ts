@@ -26,81 +26,99 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
   imports: [CommonModule, RouterModule, PostDetailComponent],
   template: `
   <ng-template #blogEmpty>
-  <p class="text-text-secondary" *ngIf="!loadingMore()">(Sin publicaciones)</p>
+  @if (!loadingMore()) { <p class="text-text-secondary">(Sin publicaciones)</p> }
   </ng-template>
   <ng-template #catEmpty>
-  <p class="text-text-secondary" *ngIf="!loadingMore()">(Sin publicaciones)</p>
+  @if (!loadingMore()) { <p class="text-text-secondary">(Sin publicaciones)</p> }
   </ng-template>
   <ng-template #loadingTpl>
     <p class="p-4">Cargando…</p>
   </ng-template>
-  <section class="container mx-auto p-4" *ngIf="!loading(); else loadingTpl">
-  <!-- Templates de vacío ya definidos arriba; se removieron duplicados -->
-    <ng-container [ngSwitch]="type()">
-      <ng-container *ngSwitchCase="'homepage'">
+  @if (!loading()) {
+  <section class="container mx-auto p-4">
+    @switch (type()) {
+      @case ('homepage') {
   <h1 class="text-3xl font-semibold mb-4">{{ p()?.['title'] }}</h1>
   <article class="prose" [innerHTML]="p()?.['content']"></article>
-      </ng-container>
-      <ng-container *ngSwitchCase="'page'">
+      }
+      @case ('page') {
   <h1 class="text-3xl font-semibold mb-4">{{ p()?.['title'] }}</h1>
   <article class="prose" [innerHTML]="p()?.['content']"></article>
-      </ng-container>
-      <ng-container *ngSwitchCase="'blog'">
+      }
+      @case ('blog') {
   <h1 class="text-2xl font-semibold mb-4">{{ p()?.['title'] || 'Blog' }}</h1>
-  <div *ngIf="loadingMore() && page() === 1" class="text-sm text-text-secondary mb-2">Cargando posts…</div>
-  <div *ngIf="posts() && posts()?.length; else blogEmpty" class="space-y-6">
-      <article *ngFor="let post of posts()" class="border-b pb-4 last:border-b-0">
+  @if (loadingMore() && page() === 1) { <div class="text-sm text-text-secondary mb-2">Cargando posts…</div> }
+  @if (posts() && posts()?.length) {
+    <div class="space-y-6">
+      @for (post of posts()!; track post.id) {
+      <article class="border-b pb-4 last:border-b-0">
         <h2 class="text-xl font-semibold leading-snug">
           <a [routerLink]="buildPostLink(post)" class="hover:underline">{{ post.title }}</a>
         </h2>
   <div class="text-xs text-text-secondary flex items-center gap-2 mt-1">
-          <span *ngIf="post.author">{{ post.author.name }}</span>
-          <span *ngIf="post.publishedAt">· {{ post.publishedAt | date:'mediumDate' }}</span>
-          <span *ngIf="post.readingTime">· {{ post.readingTime }} min</span>
+          @if (post.author) { <span>{{ post.author.name }}</span> }
+          @if (post.publishedAt) { <span>· {{ post.publishedAt | date:'mediumDate' }}</span> }
+          @if (post.readingTime) { <span>· {{ post.readingTime }} min</span> }
         </div>
   <p class="text-sm text-text-secondary mt-2 line-clamp-3">{{ getExcerpt(post) }}</p>
-        <div class="mt-2 flex flex-wrap gap-1" *ngIf="post.categories?.length">
-          <a *ngFor="let c of post.categories" [routerLink]="['/', c.slug]" class="text-[11px] px-2 py-0.5 bg-gray-100 rounded hover:bg-gray-200"><span>#</span>{{ c.name }}</a>
-        </div>
+        @if (post.categories?.length) {
+          <div class="mt-2 flex flex-wrap gap-1">
+            @for (c of post.categories; track c.slug) {
+              <a [routerLink]="['/', c.slug]" class="text-[11px] px-2 py-0.5 bg-gray-100 rounded hover:bg-gray-200"><span>#</span>{{ c.name }}</a>
+            }
+          </div>
+        }
       </article>
+      }
     </div>
-  <!-- blogEmpty template moved outside -->
-        <button *ngIf="hasMore() && !loadingMore()" (click)="loadMore()" class="mt-4 px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-50">Cargar más</button>
-  <div *ngIf="loadingMore() && page() > 1" class="text-sm text-text-secondary mt-2">Cargando…</div>
-      </ng-container>
-      <ng-container *ngSwitchCase="'category'">
+  } @else { <ng-container [ngTemplateOutlet]="blogEmpty"></ng-container> }
+        @if (hasMore() && !loadingMore()) {
+          <button (click)="loadMore()" class="mt-4 px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-50">Cargar más</button>
+        }
+        @if (loadingMore() && page() > 1) { <div class="text-sm text-text-secondary mt-2">Cargando…</div> }
+      }
+      @case ('category') {
   <h1 class="text-2xl font-semibold mb-4">Categoría: {{ p()?.['name'] }}</h1>
-  <div *ngIf="loadingMore() && page() === 1" class="text-sm text-text-secondary mb-2">Cargando posts…</div>
-  <div *ngIf="posts() && posts()?.length; else catEmpty" class="space-y-6">
-      <article *ngFor="let post of posts()" class="border-b pb-4 last:border-b-0">
+  @if (loadingMore() && page() === 1) { <div class="text-sm text-text-secondary mb-2">Cargando posts…</div> }
+  @if (posts() && posts()?.length) {
+    <div class="space-y-6">
+      @for (post of posts()!; track post.id) {
+      <article class="border-b pb-4 last:border-b-0">
         <h2 class="text-xl font-semibold leading-snug">
           <a [routerLink]="buildPostLink(post)" class="hover:underline">{{ post.title }}</a>
         </h2>
   <div class="text-xs text-text-secondary flex items-center gap-2 mt-1">
-          <span *ngIf="post.author">{{ post.author.name }}</span>
-          <span *ngIf="post.publishedAt">· {{ post.publishedAt | date:'mediumDate' }}</span>
-          <span *ngIf="post.readingTime">· {{ post.readingTime }} min</span>
+          @if (post.author) { <span>{{ post.author.name }}</span> }
+          @if (post.publishedAt) { <span>· {{ post.publishedAt | date:'mediumDate' }}</span> }
+          @if (post.readingTime) { <span>· {{ post.readingTime }} min</span> }
         </div>
   <p class="text-sm text-text-secondary mt-2 line-clamp-3">{{ getExcerpt(post) }}</p>
- 
-        <div class="mt-2 flex flex-wrap gap-1" *ngIf="post.categories?.length">
-          <a *ngFor="let c of post.categories" [routerLink]="['/', c.slug]" class="text-[11px] px-2 py-0.5 bg-gray-100 rounded hover:bg-gray-200"><span>#</span>{{ c.name }}</a>
-        </div>
+        @if (post.categories?.length) {
+          <div class="mt-2 flex flex-wrap gap-1">
+            @for (c of post.categories; track c.slug) {
+              <a [routerLink]="['/', c.slug]" class="text-[11px] px-2 py-0.5 bg-gray-100 rounded hover:bg-gray-200"><span>#</span>{{ c.name }}</a>
+            }
+          </div>
+        }
       </article>
+      }
     </div>
-  <!-- catEmpty template moved outside -->
-        <button *ngIf="hasMore() && !loadingMore()" (click)="loadMore()" class="mt-4 px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-50">Cargar más</button>
-  <div *ngIf="loadingMore() && page() > 1" class="text-sm text-text-secondary mt-2">Cargando…</div>
-      </ng-container>
-      <ng-container *ngSwitchCase="'post'">
+  } @else { <ng-container [ngTemplateOutlet]="catEmpty"></ng-container> }
+        @if (hasMore() && !loadingMore()) {
+          <button (click)="loadMore()" class="mt-4 px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-50">Cargar más</button>
+        }
+        @if (loadingMore() && page() > 1) { <div class="text-sm text-text-secondary mt-2">Cargando…</div> }
+      }
+      @case ('post') {
         <app-post-detail [slug]="postSlug()"></app-post-detail>
-      </ng-container>
-      <ng-container *ngSwitchDefault>
+      }
+      @default {
         <h1 class="text-2xl font-semibold mb-4">404</h1>
         <p>No encontrado.</p>
-      </ng-container>
-    </ng-container>
+      }
+    }
   </section>
+  } @else { <ng-container [ngTemplateOutlet]="loadingTpl"></ng-container> }
   `
 })
 export class DynamicPublicComponent {

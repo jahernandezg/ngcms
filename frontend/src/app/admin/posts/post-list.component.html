@@ -1,0 +1,240 @@
+<div  class="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 mt-5 dark:border-gray-800 dark:bg-white/3 sm:px-6">
+  <div class="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+        Posts
+      </h3>
+
+      <div class="mb-4 space-y-3">
+        <form class="flex flex-wrap gap-3 items-end text-sm" (submit)="applyFilters($event)">
+
+
+
+
+          <div>
+            <label for="filter-status" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Status</label>
+            <select id="filter-status" #stSel
+                class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+              [value]="status()" (change)="setStatus(stSel.value)">
+              <option value="" class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">Todos</option>
+              <option value="DRAFT"  class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">DRAFT</option>
+              <option value="PUBLISHED"  class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">PUBLISHED</option>
+            </select>
+          </div>
+          <div>
+            <label for="filter-category"  class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Categoría</label>
+            <select id="filter-category" #catSel
+              class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+              [value]="category()" (change)="setCategory(catSel.value)">
+              <option value=""  class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">Todas</option>
+              @for (c of tax.categories(); track c.slug) {
+              <option [value]="c.slug"
+               class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">{{c.name}}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="filter-tag"  class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tag</label>
+            <select id="filter-tag" #tagSel
+              class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+              [value]="tag()" (change)="setTag(tagSel.value)">
+              <option value="">Todos</option>
+              @for (t of tax.tags(); track t.slug) {
+              <option [value]="t.slug">{{t.name}}</option>
+              }
+            </select>
+          </div>
+          <div class="flex flex-col">
+            <label for="q"  class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Buscar</label>
+            <input #qInput id="q" type="text"
+              class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+              [value]="q()" (keyup.enter)="applyFilters($event)" (change)="setQ(qInput.value)"
+              placeholder="título o contenido" />
+          </div>
+          <div class="flex gap-2">
+
+              <button type="submit"
+                class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
+                <svg class="stroke-current fill-white dark:fill-gray-800" width="20" height="20" viewBox="0 0 20 20" fill="none"
+                  xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2.29004 5.90393H17.7067" stroke="" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M17.7075 14.0961H2.29085" stroke="" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  <path
+                    d="M12.0826 3.33331C13.5024 3.33331 14.6534 4.48431 14.6534 5.90414C14.6534 7.32398 13.5024 8.47498 12.0826 8.47498C10.6627 8.47498 9.51172 7.32398 9.51172 5.90415C9.51172 4.48432 10.6627 3.33331 12.0826 3.33331Z"
+                    fill="" stroke="" stroke-width="1.5" />
+                  <path
+                    d="M7.91745 11.525C6.49762 11.525 5.34662 12.676 5.34662 14.0959C5.34661 15.5157 6.49762 16.6667 7.91745 16.6667C9.33728 16.6667 10.4883 15.5157 10.4883 14.0959C10.4883 12.676 9.33728 11.525 7.91745 11.525Z"
+                    fill="" stroke="" stroke-width="1.5" />
+                </svg>
+
+                Filtrar
+              </button>
+            @if (isFiltered()) {
+            <button type="button"
+              class="px-3 py-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+              (click)="resetFilters()">Reset</button>
+            }
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+    <div class="flex items-center gap-3">
+
+      <button routerLink="/admin/posts/new"
+        class="inline-flex items-center gap-2 rounded-lg border border-brand-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-brand-700 shadow-theme-xs hover:bg-brand-50 hover:text-brand-800 dark:border-brand-700 dark:bg-brand-800 dark:text-brand-400 dark:hover:bg-white/[0.03] dark:hover:text-brand-200">
+        Nuevo
+      </button>
+    </div>
+  </div>
+
+  <div class="w-full overflow-x-auto">
+    <table class="min-w-full">
+      <!-- table header start -->
+      <thead>
+        <tr class="border-gray-100 border-y dark:border-gray-800">
+          <th class="py-3">
+            <div class="flex items-center">
+              <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
+                Título
+              </p>
+            </div>
+          </th>
+          <th class="py-3">
+            <div class="flex items-center">
+              <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
+                Status
+              </p>
+            </div>
+          </th>
+          <th class="py-3">
+            <div class="flex items-center">
+              <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
+                Taxonomías
+              </p>
+            </div>
+          </th>
+          <th class="py-3">
+            <div class="flex items-center">
+              <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
+                Actualizado
+              </p>
+            </div>
+          </th>
+
+          <th class="py-3">
+            <div class="flex items-center">
+              <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
+                Acciones
+              </p>
+            </div>
+          </th>
+
+        </tr>
+      </thead>
+      <!-- table header end -->
+
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        @for (p of posts(); track p.id) {
+        <tr>
+          <td class="py-3">
+            <div class="flex items-center">
+
+              <a [routerLink]="['/admin/posts', p.id]"
+                class="text-gray-500 text-theme-sm dark:text-gray-400 hover:underline hover:text-sky-500/90">
+                {{p.title}}</a>
+            </div>
+          </td>
+          <td class="py-3">
+            <div class="flex items-center">
+              <p class="rounded-full px-2 py-0.5 text-theme-xs font-medium" [ngClass]="badgeClass(p.status)">
+                {{p.status}}
+              </p>
+            </div>
+          </td>
+
+          <td class="py-3">
+            @if ((p.categories?.length||0)+(p.tags?.length||0) > 0 ) {
+            <div class="flex items-center flex-wrap gap-1">
+              @for ( c of p.categories; track c.slug) {
+              <span class="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-medium">C:
+                {{c.name}}</span>
+              }
+              @for ( t of p.tags; track t.slug) {
+              <span class="px-1.5 py-0.5 bg-pink-100 text-pink-700 rounded text-[10px] font-medium">T: {{t.name}}</span>
+              }
+            </div>
+
+            } @else {
+            <span class="text-xs text-gray-400">—</span>
+            }
+          </td>
+          <td class="py-3">
+            <div class="flex items-center">
+              <p class="text-gray-500 text-theme-sm dark:text-gray-400">
+                {{p.updatedAt | date:'short'}}
+              </p>
+            </div>
+          </td>
+
+          <td class="py-3">
+            <div class="flex items-center">
+              <div class="inline-flex items-center shadow-theme-xs">
+                <button type="button" [routerLink]="['/admin/posts', p.id]"
+                  class="-ml-px inline-flex items-center gap-2 bg-transparent px-4 py-3 text-sm font-medium text-brand-500 ring-1 ring-inset ring-brand-500 first:rounded-l-lg last:rounded-r-lg hover:bg-brand-500 hover:text-white">
+                  Editar
+                </button>
+                <button type="button" (click)="delete(p)"
+                  class="-ml-px inline-flex items-center gap-2 bg-transparent px-4 py-3 text-sm font-medium text-red-500 ring-1 ring-inset ring-red-500 first:rounded-l-lg last:rounded-r-lg hover:bg-red-500 hover:text-white">
+
+                  Eliminar
+                </button>
+              </div>
+
+            </div>
+          </td>
+
+
+
+        </tr>
+        }
+        @if (!loading() && posts().length===0 ) {
+        <tr>
+          <td colspan="3" class="py-3">
+            <div class="flex items-center">
+              <p class="text-gray-500 text-theme-sm dark:text-gray-400">
+                Sin registros
+              </p>
+            </div>
+          </td>
+        </tr>
+        }
+        @if (loading()) {
+        <tr>
+          <td colspan="3" class="py-3">
+            <div class="flex items-center">
+              <p class="text-gray-500 text-theme-sm dark:text-gray-400">
+                Cargando...
+              </p>
+            </div>
+          </td>
+        </tr>
+        }
+
+        <!-- table body end -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+@if (totalPages() > 1) {
+<div class="flex justify-end gap-2 mt-4 text-sm">
+  <button (click)="prev()" [disabled]="page()===1"
+    class="px-2 py-1 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 disabled:opacity-40 transition-colors">«</button>
+  <span>Página {{page()}} / {{totalPages()}}</span>
+  <button (click)="next()" [disabled]="page()===totalPages()"
+    class="px-2 py-1 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 disabled:opacity-40 transition-colors">»</button>
+</div>
+}
