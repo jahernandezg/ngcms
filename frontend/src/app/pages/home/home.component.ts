@@ -16,24 +16,33 @@ import { unwrapData } from '../../shared/http-utils';
   template: `
     <section class="container mx-auto p-4">
       <!-- Modo Página Home (sin cambiar la URL) -->
-      <ng-container *ngIf="homepage(); else blogTpl">
+      @if (homepage()) {
         <h1 class="text-3xl font-semibold mb-4">{{ homepage()?.title }}</h1>
         <article class="prose" [innerHTML]="homepage()?.content"></article>
-      </ng-container>
-      <ng-template #blogTpl>
+      } @else {
         <h1 class="text-2xl font-semibold mb-4">Últimos posts</h1>
-        <ng-container *ngIf="!svc.loading(); else loadingTpl">
-          <article *ngFor="let p of svc.items()" class="py-4 border-b">
+        @if (!svc.loading()) {
+          @for (p of svc.items(); track p.id) {
+          <article class="py-4 border-b">
             <h2 class="text-xl font-medium"><a [routerLink]="['/post', p.slug]" class="text-primary underline">{{ p.title }}</a></h2>
             <p class="text-text-secondary">{{ p.excerpt }}</p>
-            <div class="flex flex-wrap gap-2 my-2" *ngIf="p.categories as cats">
-              <a *ngFor="let c of cats" [routerLink]="['/category', c.slug]" class="text-xs px-2 py-1 bg-gray-100 rounded">#{{ c.name }}</a>
-            </div>
-            <div class="flex flex-wrap gap-2 my-2" *ngIf="p.tags?.length">
-              <a *ngFor="let t of p.tags" [routerLink]="['/tag', t.slug]" class="text-xs px-2 py-1 border border-border-app rounded text-text-secondary">{{ t.name }}</a>
-            </div>
+            @if (p.categories; as cats) {
+              <div class="flex flex-wrap gap-2 my-2">
+                @for (c of cats; track c.slug) {
+                  <a [routerLink]="['/category', c.slug]" class="text-xs px-2 py-1 bg-gray-100 rounded">#{{ c.name }}</a>
+                }
+              </div>
+            }
+            @if (p.tags?.length) {
+              <div class="flex flex-wrap gap-2 my-2">
+                @for (t of p.tags!; track t.slug) {
+                  <a [routerLink]="['/tag', t.slug]" class="text-xs px-2 py-1 border border-border-app rounded text-text-secondary">{{ t.name }}</a>
+                }
+              </div>
+            }
             <small class="text-text-secondary">Por {{ p.author.name }} · {{ p.readingTime }} min</small>
           </article>
+          }
           @if(!svc.loading() && !svc.error() && svc.items().length === 0){
             <p class="text-text-secondary">No hay posts publicados todavía.</p>
           }
@@ -42,12 +51,11 @@ import { unwrapData } from '../../shared/http-utils';
             <span>Página {{ svc.page() }} / {{ svc.totalPages() }}</span>
             <button class="px-3 py-1 border rounded" [disabled]="svc.page() >= svc.totalPages() || svc.loading()" (click)="svc.next()">Siguiente</button>
           </nav>
-        </ng-container>
-        <ng-template #loadingTpl>
-          <p *ngIf="svc.loading()">Cargando…</p>
-          <p *ngIf="!svc.loading() && svc.error()" class="text-red-600">{{ svc.error() }}</p>
-        </ng-template>
-      </ng-template>
+        } @else {
+          @if (svc.loading()) { <p>Cargando…</p> }
+          @if (!svc.loading() && svc.error()) { <p class="text-red-600">{{ svc.error() }}</p> }
+        }
+      }
     </section>
   `,
 })

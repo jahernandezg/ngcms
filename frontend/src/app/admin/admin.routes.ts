@@ -5,6 +5,7 @@ import { loginRedirectGuard } from './guards/login-redirect.guard';
 
 export const ADMIN_ROUTES: Routes = [
   { path: 'login', canActivate: [loginRedirectGuard], loadComponent: () => import('./auth/login.component').then(m => m.LoginComponent) },
+  { path: 'reset-password', canActivate: [loginRedirectGuard], loadComponent: () => import('./auth/reset-password.component').then(m => m.ResetPasswordComponent) },
   {
     path: '',
     canActivate: [authGuard],

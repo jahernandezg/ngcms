@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { AlertComponent } from '../components/alert.component';
 // (Drag & Drop temporalmente removido para simplificar; se puede reintroducir luego)
 
 interface MenuItemEntity { id: string; title: string; type: string; sortOrder: number; parentId?: string|null; url?: string|null; isVisible?: boolean; openNewWindow?: boolean; targetId?: string|null }
@@ -12,110 +13,15 @@ interface SimpleRef { id: string; title: string; slug?: string }
 @Component({
   standalone: true,
   selector: 'app-menu-list',
-  imports: [CommonModule, FormsModule, DragDropModule],
+  imports: [CommonModule, FormsModule, DragDropModule, AlertComponent],
+  templateUrl: './menu-list.component.html',
   styles: [`
   /* Referencia requerida por Tailwind CSS v4 para permitir @apply en estilos aislados */
   @reference "tailwindcss";
-    .menu-box { @apply border rounded p-3 bg-white/60 backdrop-blur; }
-    .drag-item { @apply flex items-center justify-between gap-2 px-2 py-1 bg-white border rounded shadow-sm cursor-move; }
-    .drag-item[data-nested='true'] { @apply bg-indigo-50; }
+    .drag-item { @apply flex items-center justify-between gap-2 px-2 py-1  shadow-sm cursor-move; }
+
   `],
   template: `
-  <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
-    <h1 class="text-2xl font-semibold">Menú</h1>
-    <div class="flex gap-2 text-sm">
-      <button (click)="addRoot()" class="px-3 py-1.5 border rounded">Añadir Ítem</button>
-      <button (click)="saveOrder()" class="px-3 py-1.5 bg-blue-600 text-white rounded" [disabled]="savingOrder()">Guardar Orden</button>
-    </div>
-  </div>
-  <p *ngIf="loading()" class="text-sm text-gray-500">Cargando...</p>
-  <div *ngIf="!loading()" class="space-y-6">
-    <div class="menu-box">
-      <h2 class="font-semibold mb-2 text-sm">Raíz</h2>
-      <div class="space-y-2" cdkDropList (cdkDropListDropped)="dropRoot($event)">
-        <div *ngFor="let item of roots(); let i = index" class="drag-item" cdkDrag>
-          <div class="flex-1 min-w-0">
-            <div class="font-medium text-sm">{{item.title}}</div>
-            <div class="text-xs text-gray-500">{{item.type}} <span *ngIf="item.url">→ {{item.url}}</span></div>
-          </div>
-          <div class="flex gap-1">
-            <button class="text-xs px-2 py-0.5 border rounded" (click)="addChild(item)">Sub</button>
-            <button class="text-xs px-2 py-0.5 border rounded" (click)="edit(item)">Editar</button>
-            <button class="text-xs px-2 py-0.5 border rounded text-red-600" (click)="remove(item)" [disabled]="actioning()">X</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div *ngIf="childrenMapKeys().length" class="space-y-4">
-      <div *ngFor="let pid of childrenMapKeys()" class="menu-box">
-        <h3 class="font-semibold mb-2 text-sm">Hijos de {{ labelFor(pid) }}</h3>
-        <div class="space-y-2" cdkDropList (cdkDropListDropped)="dropChild($event, pid)">
-          <div *ngFor="let item of childrenMap()[pid]; let j = index" class="drag-item" data-nested="true" cdkDrag>
-            <div class="flex-1 min-w-0">
-              <div class="font-medium text-sm">{{item.title}}</div>
-              <div class="text-xs text-gray-500">{{item.type}} <span *ngIf="item.url">→ {{item.url}}</span></div>
-            </div>
-            <div class="flex gap-1">
-              <button class="text-xs px-2 py-0.5 border rounded" (click)="edit(item)">Editar</button>
-              <button class="text-xs px-2 py-0.5 border rounded text-red-600" (click)="remove(item)" [disabled]="actioning()">X</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div *ngIf="editing()" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div class="bg-white rounded shadow-lg w-full max-w-md p-6 space-y-4">
-      <h2 class="text-lg font-semibold">{{ editing()!.id ? 'Editar Ítem' : 'Nuevo Ítem' }}</h2>
-      <form #f="ngForm" class="space-y-3" (ngSubmit)="saveItem()">
-        <div>
-          <label class="block text-xs font-medium mb-1" for="miTitle">Título</label>
-          <input id="miTitle" [(ngModel)]="editing()!.title" name="title" required class="w-full border rounded px-2 py-1 text-sm" />
-        </div>
-        <div>
-          <label class="block text-xs font-medium mb-1" for="miType">Tipo</label>
-          <select id="miType" [(ngModel)]="editing()!.type" name="type" required class="w-full border rounded px-2 py-1 text-sm" (change)="onTypeChange()">
-            <option value="PAGE">PAGE</option>
-            <option value="POST">POST</option>
-            <option value="BLOG_INDEX">BLOG_INDEX</option>
-            <option value="CATEGORY">CATEGORY</option>
-            <option value="EXTERNAL_LINK">EXTERNAL_LINK</option>
-          </select>
-        </div>
-        <div *ngIf="editing()!.type==='EXTERNAL_LINK'">
-          <label class="block text-xs font-medium mb-1" for="miUrl">URL</label>
-          <input id="miUrl" [(ngModel)]="editing()!.url" name="url" type="url" class="w-full border rounded px-2 py-1 text-sm" />
-        </div>
-        <div class="flex items-center gap-2">
-          <input id="miVisible" type="checkbox" [(ngModel)]="editing()!.isVisible" name="isVisible" />
-          <label class="text-xs" for="miVisible">Visible</label>
-          <input id="miNewWindow" type="checkbox" [(ngModel)]="editing()!.openNewWindow" name="openNewWindow" />
-          <label class="text-xs" for="miNewWindow">Nueva Ventana</label>
-        </div>
-        <div *ngIf="showTargetSelector()" class="pt-1">
-          <label class="block text-xs font-medium mb-1" for="miTarget">Destino</label>
-          <select id="miTarget" [(ngModel)]="editing()!.targetId" name="targetId" class="w-full border rounded px-2 py-1 text-xs">
-            <option value="">-- seleccionar --</option>
-            <ng-container *ngIf="editing()!.type==='PAGE'">
-              <option *ngFor="let p of pagesRef()" [value]="p.id">Página: {{p.title}}</option>
-            </ng-container>
-            <ng-container *ngIf="editing()!.type==='CATEGORY'">
-              <option *ngFor="let c of catsRef()" [value]="c.id">Categoría: {{c.title}}</option>
-            </ng-container>
-            <ng-container *ngIf="editing()!.type==='POST'">
-              <option *ngFor="let po of postsRef()" [value]="po.id">Post: {{po.title}}</option>
-            </ng-container>
-          </select>
-          <p *ngIf="loadingRefs()" class="text-[10px] text-gray-500 mt-1">Cargando opciones…</p>
-        </div>
-        <div class="flex gap-2 pt-2">
-          <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white rounded text-sm" [disabled]="savingItem()">Guardar</button>
-          <button type="button" class="px-3 py-1.5 border rounded text-sm" (click)="cancelEdit()">Cancelar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-  <p *ngIf="error()" class="text-sm text-red-600 mt-4">{{error()}}</p>
   `
 })
 export class MenuListComponent {
@@ -127,6 +33,8 @@ export class MenuListComponent {
   items = signal<MenuItemEntity[]>([]);
   editing = signal<MenuItemEntity | null>(null);
   error = signal<string|null>(null);
+  success = signal<string|null>(null);
+  private successTimer: ReturnType<typeof setTimeout> | null = null;
   pagesRef = signal<SimpleRef[]>([]);
   catsRef = signal<SimpleRef[]>([]);
   postsRef = signal<SimpleRef[]>([]);
@@ -219,8 +127,8 @@ export class MenuListComponent {
     if(!e.id){ payload.sortOrder = e.sortOrder; req = this.http.post<Envelope<MenuItemEntity>|MenuItemEntity>(`/api/admin/menu/items`, payload); }
     else req = this.http.put<Envelope<MenuItemEntity>|MenuItemEntity>(`/api/admin/menu/items/${e.id}`, payload);
     req.subscribe({
-      next: savedResp => { const saved = this.unwrap<MenuItemEntity>(savedResp); if(!e.id) { this.items.update(arr => [...arr, saved]); } else { this.items.update(arr => arr.map(i=> i.id===saved.id? saved : i)); }
-        this.editing.set(null); this.savingItem.set(false); },
+      next: savedResp => { const saved = this.unwrap<MenuItemEntity>(savedResp); if(!e.id) { this.items.update(arr => [...arr, saved]); this.success.set('Ítem creado'); } else { this.items.update(arr => arr.map(i=> i.id===saved.id? saved : i)); this.success.set('Ítem actualizado'); }
+        this.editing.set(null); this.savingItem.set(false); this.startAutoHideSuccess(); },
       error: () => { this.error.set('Error guardando'); this.savingItem.set(false); }
     });
   }
@@ -229,7 +137,7 @@ export class MenuListComponent {
     if(!confirm('¿Eliminar ítem?')) return;
     this.actioning.set(true);
   this.http.delete(`/api/admin/menu/items/${item.id}`).subscribe({
-      next: () => { this.items.update(arr => arr.filter(i=> i.id!==item.id && i.parentId!==item.id)); this.actioning.set(false); },
+      next: () => { this.items.update(arr => arr.filter(i=> i.id!==item.id && i.parentId!==item.id)); this.actioning.set(false); this.success.set('Ítem eliminado'); this.startAutoHideSuccess(); },
       error: () => { this.actioning.set(false); this.error.set('Error eliminando'); }
     });
   }
@@ -256,8 +164,10 @@ export class MenuListComponent {
     this.savingOrder.set(true);
     const order = this.items().map(i => ({ id: i.id, sortOrder: i.sortOrder, parentId: i.parentId || null }));
     this.http.put(`/api/admin/menu/reorder`, { order }).subscribe({
-      next: () => { this.savingOrder.set(false); },
+    next: () => { this.savingOrder.set(false); this.success.set('Orden guardado'); this.startAutoHideSuccess(); },
       error: () => { this.savingOrder.set(false); this.error.set('Error guardando orden'); }
     });
   }
+
+  private startAutoHideSuccess(){ if(this.successTimer) clearTimeout(this.successTimer); this.successTimer = setTimeout(()=> this.success.set(null), 4000); }
 }

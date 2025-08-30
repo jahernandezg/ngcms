@@ -17,15 +17,28 @@
   "assets": [
           {
             "glob": "**/*",
-            "input": "frontend/public"
+            "input": "frontend/src/assets",
+            "output": "assets"
+          },
+          {
+            "glob": "**/*",
+            "input": "frontend/public",
+            "output": "/"
           }
         ],
   "allowedCommonJsDependencies": ["quill"],
-  "styles": ["frontend/src/tailwind.css", "frontend/src/styles.scss"],
+  "styles": [
+            "frontend/src/tailwind.css",
+            "frontend/src/app/admin/theme/admin-theme.css",
+            "frontend/src/styles.scss"
+          ],
   "outputMode": "static"
       },
       "configurations": {
         "production": {
+          "optimization": {
+            "fonts": { "inline": false }
+          },
           "budgets": [
             {
               "type": "initial",

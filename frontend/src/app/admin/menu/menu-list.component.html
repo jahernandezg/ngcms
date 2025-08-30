@@ -1,0 +1,200 @@
+<div  class="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 mt-5 dark:border-gray-800 dark:bg-white/3 sm:px-6">
+  <div class="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+        Menú
+      </h3>
+
+
+    </div>
+
+    <div class="flex items-center gap-3">
+
+      <button  (click)="addRoot()"
+        class="inline-flex items-center gap-2 rounded-lg border border-grey-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-grey-700 shadow-theme-xs hover:bg-grey-50 hover:text-grey-800 dark:border-grey-700 dark:bg-grey-800 dark:text-grey-400 dark:hover:bg-white/[0.03] dark:hover:text-grey-200">
+        Añadir Ítem
+      </button>
+      <button (click)="saveOrder()" [disabled]="savingOrder()"
+        class="inline-flex items-center gap-2 rounded-lg border border-brand-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-brand-700 shadow-theme-xs hover:bg-brand-50 hover:text-brand-800 dark:border-brand-700 dark:bg-brand-800 dark:text-brand-400 dark:hover:bg-white/[0.03] dark:hover:text-brand-200">
+         Guardar Orden
+      </button>
+    </div>
+  </div>
+
+  @if (success()) {
+  <app-admin-alert [variant]="'success'" title="Éxito" [message]="success()!" (closed)="success.set(null)" />
+  }
+  @if (error()) {
+  <app-admin-alert [variant]="'error'" title="Error" [message]="error()!" (closed)="error.set(null)" />
+  }
+
+  <!--@if (pages().length) {
+    <div class="w-full overflow-x-auto min-w-full border rounded-lg divide-y bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 divide-gray-200 dark:divide-gray-700 transition-colors">
+    @for (p of pages(); track p.id) {
+    <div class="p-3 flex items-center gap-4 text-sm">
+      <div class="flex-1 min-w-0">
+        <a [routerLink]="['/admin/pages', p.id]" class="font-medium hover:underline dark:text-white/90">{{p.title}}</a>
+        <div class="text-xs text-gray-500 dark:text-gray-400 truncate">/{{p.slug}}
+          @if (p.isHomepage) {
+            <span class="ml-1 px-1 py-0.5 bg-green-100 text-green-700 rounded">Home</span>
+          }
+        </div>
+      </div>
+      <div class="w-28 text-xs text-gray-500 dark:text-gray-400">{{p.status}}</div>
+      <div class="w-40 text-xs text-gray-500 dark:text-gray-400">{{p.updatedAt | date:'short'}}</div>
+      <div class="flex gap-2">
+
+          @if (!p.isHomepage) {
+            <button (click)="setHomepage(p)"
+            class="inline-flex items-center gap-2 rounded-lg border border-brand-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-brand-700 shadow-theme-xs hover:bg-brand-50 hover:text-brand-800 dark:border-brand-700 dark:bg-brand-800 dark:text-brand-400 dark:hover:bg-white/[0.03] dark:hover:text-brand-200">
+            Home
+          </button>
+          }
+
+          @if (p.status !== 'ARCHIVED') {
+            <button (click)="archive(p)"
+            class="inline-flex items-center cursor:pointer gap-2 rounded-lg border border-warning-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-warning-700 shadow-theme-xs hover:bg-warning-50 hover:text-warning-800 dark:border-warning-700 dark:bg-warning-800 dark:text-warning-400 dark:hover:bg-white/[0.03] dark:hover:text-warning-200">
+            Archivar
+          </button>
+          }
+
+      </div>
+    </div>
+    }
+  </div>
+  } @else {
+    <p class="text-sm text-gray-500 dark:text-gray-400">Sin páginas.</p>
+  }-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  @if (loading()) {
+  <p class="text-sm text-gray-500">Cargando...</p>
+  }
+  @if (!loading()) {
+  <div class="space-y-6">
+    <div class="border rounded p-3 bg-white/60 backdrop-blur dark:bg-gray-800  dark:border-gray-600 dark:divide-gray-700 transition-colors">
+      <h2 class="font-semibold mb-2 text-sm dark:text-white/90">Raíz</h2>
+      <div class="space-y-2 " cdkDropList (cdkDropListDropped)="dropRoot($event)">
+        @for (item of roots(); track item.id; let i = $index) {
+        <div class="drag-item bg-white border rounded dark:bg-gray-700  dark:border-gray-600 dark:divide-gray-700 transition-colors" cdkDrag>
+          <div class="flex-1 min-w-0 ">
+            <div class="font-medium text-sm  dark:text-white/70">{{item.title}}</div>
+            <div class="text-xs text-gray-500  dark:text-gray-400">{{item.type}} @if (item.url) {<span>→ {{item.url}}</span>}</div>
+          </div>
+          <div class="flex gap-1">
+            <button class="text-xs px-2 py-0.5 border rounded dark:text-gray-400" (click)="addChild(item)">Sub</button>
+            <button class="text-xs px-2 py-0.5 border rounded dark:text-gray-400" (click)="edit(item)">Editar</button>
+            <button class="text-xs px-2 py-0.5 border rounded text-red-600 dark:text-white dark:bg-red-600 dark:border-red-500 " (click)="remove(item)" [disabled]="actioning()">X</button>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+    @if (childrenMapKeys().length) {
+    <div class="space-y-4">
+      @for (pid of childrenMapKeys(); track pid) {
+      <div class="menu-box">
+        <h3 class="font-semibold mb-2 text-sm  dark:text-white/90">Hijos de {{ labelFor(pid) }}</h3>
+        <div class="space-y-2" cdkDropList (cdkDropListDropped)="dropChild($event, pid)">
+          @for (item of childrenMap()[pid]; track item.id; let j = $index) {
+          <div class="drag-item  bg-indigo-50 border rounded p-3 bg-white/60 backdrop-blur dark:bg-gray-800 dark:border-gray-600 dark:divide-gray-700 transition-colors" data-nested="true" cdkDrag>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-sm dark:text-white/70">{{item.title}}</div>
+              <div class="text-xs text-gray-500 dark:text-white/40">{{item.type}} @if (item.url) {<span>→ {{item.url}}</span>}</div>
+            </div>
+            <div class="flex gap-1">
+              <button class="text-xs px-2 py-0.5 border rounded dark:text-gray-400" (click)="edit(item)">Editar</button>
+              <button class="text-xs px-2 py-0.5 border rounded text-red-600 dark:text-white dark:bg-red-600 dark:border-red-500" (click)="remove(item)" [disabled]="actioning()">X</button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
+  }
+  @if (editing()) {
+  <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div class="bg-white rounded shadow-lg w-full max-w-md p-6 space-y-4">
+      <h2 class="text-lg font-semibold">{{ editing()!.id ? 'Editar Ítem' : 'Nuevo Ítem' }}</h2>
+      <form #f="ngForm" class="space-y-3" (ngSubmit)="saveItem()">
+        <div>
+          <label class="block text-xs font-medium mb-1" for="miTitle">Título</label>
+          <input id="miTitle" [(ngModel)]="editing()!.title" name="title" required class="w-full border rounded px-2 py-1 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1" for="miType">Tipo</label>
+          <select id="miType" [(ngModel)]="editing()!.type" name="type" required class="w-full border rounded px-2 py-1 text-sm" (change)="onTypeChange()">
+            <option value="PAGE">PAGE</option>
+            <option value="POST">POST</option>
+            <option value="BLOG_INDEX">BLOG_INDEX</option>
+            <option value="CATEGORY">CATEGORY</option>
+            <option value="EXTERNAL_LINK">EXTERNAL_LINK</option>
+          </select>
+        </div>
+        @if (editing()!.type==='EXTERNAL_LINK') {
+        <div>
+          <label class="block text-xs font-medium mb-1" for="miUrl">URL</label>
+          <input id="miUrl" [(ngModel)]="editing()!.url" name="url" type="url" class="w-full border rounded px-2 py-1 text-sm" />
+        </div>
+        }
+        <div class="flex items-center gap-2">
+          <input id="miVisible" type="checkbox" [(ngModel)]="editing()!.isVisible" name="isVisible" />
+          <label class="text-xs" for="miVisible">Visible</label>
+          <input id="miNewWindow" type="checkbox" [(ngModel)]="editing()!.openNewWindow" name="openNewWindow" />
+          <label class="text-xs" for="miNewWindow">Nueva Ventana</label>
+        </div>
+        @if (showTargetSelector()) {
+        <div class="pt-1">
+          <label class="block text-xs font-medium mb-1" for="miTarget">Destino</label>
+          <select id="miTarget" [(ngModel)]="editing()!.targetId" name="targetId" class="w-full border rounded px-2 py-1 text-xs">
+            <option value="">-- seleccionar --</option>
+            @if (editing()!.type==='PAGE') {
+              @for (p of pagesRef(); track p.id) {
+                <option [value]="p.id">Página: {{p.title}}</option>
+              }
+            }
+            @if (editing()!.type==='CATEGORY') {
+              @for (c of catsRef(); track c.id) {
+                <option [value]="c.id">Categoría: {{c.title}}</option>
+              }
+            }
+            @if (editing()!.type==='POST') {
+              @for (po of postsRef(); track po.id) {
+                <option [value]="po.id">Post: {{po.title}}</option>
+              }
+            }
+          </select>
+          @if (loadingRefs()) {<p class="text-[10px] text-gray-500 mt-1">Cargando opciones…</p>}
+        </div>
+        }
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white rounded text-sm" [disabled]="savingItem()">Guardar</button>
+          <button type="button" class="px-3 py-1.5 border rounded text-sm" (click)="cancelEdit()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  }
+  @if (error()) {
+  <p class="text-sm text-red-600 mt-4">{{error()}}</p>
+  }

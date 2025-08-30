@@ -4,8 +4,8 @@ import { signal } from '@angular/core';
 
 interface CategoryDto { id: string; name: string; slug: string; parentId?: string | null; createdAt: string; }
 interface TagDto { id: string; name: string; slug: string; createdAt: string; }
-interface CreateCategoryDto { name: string; parentId?: string | null; }
-interface UpdateCategoryDto { name?: string; parentId?: string | null; }
+interface CreateCategoryDto { name: string; parentSlug?: string; }
+interface UpdateCategoryDto { name?: string; parentSlug?: string; }
 interface CreateTagDto { name: string; }
 interface UpdateTagDto { name?: string; }
 
@@ -40,16 +40,16 @@ export class TaxonomyService {
   }
 
   createCategory(dto: CreateCategoryDto) {
-  return this.http.post<Envelope<CategoryDto>>('/api/admin/taxonomy/categories', dto);
+    return this.http.post<Envelope<CategoryDto>>('/api/admin/taxonomy/categories', dto);
   }
-  updateCategory(id: string, dto: UpdateCategoryDto) {
-  return this.http.put<Envelope<CategoryDto>>(`/api/admin/taxonomy/categories/${id}`, dto);
+  updateCategory(slug: string, dto: UpdateCategoryDto) {
+    return this.http.put<Envelope<CategoryDto>>(`/api/admin/taxonomy/categories/${slug}`, dto);
   }
-  deleteCategory(id: string) {
-  return this.http.delete<Envelope<{ id: string }>>(`/api/admin/taxonomy/categories/${id}`);
+  deleteCategory(slug: string) {
+    return this.http.delete<Envelope<{ id: string }>>(`/api/admin/taxonomy/categories/${slug}`);
   }
 
   createTag(dto: CreateTagDto) { return this.http.post<Envelope<TagDto>>('/api/admin/taxonomy/tags', dto); }
-  updateTag(id: string, dto: UpdateTagDto) { return this.http.put<Envelope<TagDto>>(`/api/admin/taxonomy/tags/${id}`, dto); }
-  deleteTag(id: string) { return this.http.delete<Envelope<{ id: string }>>(`/api/admin/taxonomy/tags/${id}`); }
+  updateTag(slug: string, dto: UpdateTagDto) { return this.http.put<Envelope<TagDto>>(`/api/admin/taxonomy/tags/${slug}`, dto); }
+  deleteTag(slug: string) { return this.http.delete<Envelope<{ id: string }>>(`/api/admin/taxonomy/tags/${slug}`); }
 }

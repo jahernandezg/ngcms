@@ -28,33 +28,39 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[] }
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-  <section class="container mx-auto p-4" *ngIf="!loading(); else loadingTpl">
+  @if (!loading()) {
+    <section class="container mx-auto p-4">
       <h1 class="text-3xl font-semibold mb-2">{{ post()?.title }}</h1>
-  <small class="text-text-secondary">Por {{ post()?.author?.name }} · {{ post()?.readingTime }} min</small>
+      <small class="text-text-secondary">Por {{ post()?.author?.name }} · {{ post()?.readingTime }} min</small>
       <div class="flex flex-wrap gap-2 my-2">
-  <!-- Enlaces de categoría ahora usan esquema limpio (resolver dinámico) -->
-  <a *ngFor="let c of post()?.categories" [routerLink]="['/', c.slug]" class="text-xs px-2 py-1 bg-gray-100 rounded">#{{ c.name }}</a>
-        <span *ngFor="let t of post()?.tags" class="text-xs px-2 py-1 bg-gray-50 rounded">{{ t.name }}</span>
+        @for (c of post()?.categories; track c.id) {
+          <a [routerLink]="['/', c.slug]" class="text-xs px-2 py-1 bg-gray-100 rounded">#{{ c.name }}</a>
+        }
+        @for (t of post()?.tags; track t.id) {
+          <span class="text-xs px-2 py-1 bg-gray-50 rounded">{{ t.name }}</span>
+        }
       </div>
       <article class="prose mt-4" [innerHTML]="post()?.content"></article>
-  <section class="mt-10" *ngIf="related()?.length">
-        <h3 class="text-xl font-semibold mb-2">Relacionados</h3>
-        <ul class="list-disc pl-5">
-          <li *ngFor="let r of related()">
-            <!-- Relacionados: se resuelven por slug limpio -->
-            <a [routerLink]="['/', r.slug]" class="text-primary underline">{{ r.title }}</a>
-          </li>
-        </ul>
-      </section>
+      @if (related()?.length) {
+        <section class="mt-10">
+          <h3 class="text-xl font-semibold mb-2">Relacionados</h3>
+          <ul class="list-disc pl-5">
+            @for (r of related(); track r.id) {
+              <li>
+                <a [routerLink]="['/', r.slug]" class="text-primary underline">{{ r.title }}</a>
+              </li>
+            }
+          </ul>
+        </section>
+      }
       <nav class="mt-6">
-  <a [attr.href]="backHref" (click)="goBack($event)" class="text-primary underline">Volver</a>
+        <a [attr.href]="backHref" (click)="goBack($event)" class="text-primary underline">Volver</a>
       </nav>
     </section>
-    <!-- JSON-LD Article -->
     <script type="application/ld+json" [textContent]="jsonLd()"></script>
-    <ng-template #loadingTpl>
-      <p class="p-4">Cargando…</p>
-    </ng-template>
+  } @else {
+    <p class="p-4">Cargando…</p>
+  }
   `,
 })
 export class PostDetailComponent {
@@ -122,13 +128,13 @@ export class PostDetailComponent {
           const decodeIfNeeded = (html: string) => {
             if (!html) return html;
             if (html.includes('<') && !html.includes('&lt;')) return html; // parece normal
-            if (html.includes('&lt;') && !html.includes('<')) {
+         if (html.includes('&lt;') && !html.includes('<')) {
               return html
                 .replace(/&lt;/g, '<')
                 .replace(/&gt;/g, '>')
                 .replace(/&amp;/g, '&')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'");
+           .replace(/&quot;/g, '"')
+           .replace(/&#39;/g, "'");
             }
             return html;
           };

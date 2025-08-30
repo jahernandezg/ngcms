@@ -11,38 +11,8 @@ interface PageListResult { items: PageEntity[]; total: number; page: number; pag
   standalone: true,
   selector: 'app-page-list',
   imports: [CommonModule, RouterModule, ReactiveFormsModule],
-  template: `
-  <div class="flex items-center justify-between mb-4 gap-4 flex-wrap">
-    <h1 class="text-2xl font-semibold">Páginas</h1>
-    <div class="flex gap-2 items-center flex-wrap">
-  <select [formControl]="filterForm.controls.status" class="border rounded px-2 py-1 text-sm bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 transition-colors">
-        <option value="">Todas</option>
-        <option value="DRAFT">Borrador</option>
-        <option value="PUBLISHED">Publicadas</option>
-        <option value="ARCHIVED">Archivadas</option>
-      </select>
-  <button (click)="reload()" class="px-3 py-1.5 text-sm border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" [disabled]="loading()">Filtrar</button>
-  <button routerLink="/admin/pages/new" class="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors">Nueva Página</button>
-    </div>
-  </div>
-  <div class="border rounded divide-y bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 divide-gray-200 dark:divide-gray-700 transition-colors" *ngIf="pages().length; else emptyTpl">
-    <div *ngFor="let p of pages()" class="p-3 flex items-center gap-4 text-sm">
-      <div class="flex-1 min-w-0">
-        <a [routerLink]="['/admin/pages', p.id]" class="font-medium hover:underline">{{p.title}}</a>
-  <div class="text-xs text-gray-500 dark:text-gray-400 truncate">/{{p.slug}} <span *ngIf="p.isHomepage" class="ml-1 px-1 py-0.5 bg-green-100 text-green-700 rounded">Home</span></div>
-      </div>
-  <div class="w-28 text-xs text-gray-500 dark:text-gray-400">{{p.status}}</div>
-  <div class="w-40 text-xs text-gray-500 dark:text-gray-400">{{p.updatedAt | date:'short'}}</div>
-      <div class="flex gap-2">
-  <button (click)="setHomepage(p)" *ngIf="!p.isHomepage" class="text-xs px-2 py-1 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" [disabled]="actioning()">Home</button>
-  <button (click)="archive(p)" *ngIf="p.status !== 'ARCHIVED'" class="text-xs px-2 py-1 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" [disabled]="actioning()">Archivar</button>
-      </div>
-    </div>
-  </div>
-  <ng-template #emptyTpl>
-  <p class="text-sm text-gray-500 dark:text-gray-400">Sin páginas.</p>
-  </ng-template>
-  `
+  // styles moved to global styles
+  templateUrl: './page-list.component.html',
 })
 export class PageListComponent {
   private http = inject(HttpClient);

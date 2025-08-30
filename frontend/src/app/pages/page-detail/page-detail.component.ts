@@ -24,17 +24,18 @@ type ApiItemResponse<T> = { success: boolean; message: string; data: T };
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-  <section class="container mx-auto p-4" *ngIf="page(); else loadingTpl">
-    <h1 class="text-3xl font-semibold mb-4">{{ page()?.title }}</h1>
-    <article class="prose" [innerHTML]="page()?.content"></article>
-    <nav class="mt-8">
-  <a routerLink="/" class="text-primary underline">Inicio</a>
-    </nav>
-  </section>
-  <script type="application/ld+json" [textContent]="jsonLd()"></script>
-  <ng-template #loadingTpl>
+  @if (page()) {
+    <section class="container mx-auto p-4">
+      <h1 class="text-3xl font-semibold mb-4">{{ page()?.title }}</h1>
+      <article class="prose" [innerHTML]="page()?.content"></article>
+      <nav class="mt-8">
+        <a routerLink="/" class="text-primary underline">Inicio</a>
+      </nav>
+    </section>
+    <script type="application/ld+json" [textContent]="jsonLd()"></script>
+  } @else {
     <p class="p-4">Cargando…</p>
-  </ng-template>
+  }
   `,
 })
 export class PageDetailComponent {
