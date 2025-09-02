@@ -60,7 +60,7 @@ async function main() {
 
   // Seed / migrate DB
   await new Promise((res, rej) => {
-    const p = spawn('npm', ['run', 'bootstrap'], { stdio: 'inherit', shell: true, env: { ...process.env, DATABASE_URL: db.url } });
+    const p = spawn('npm', ['run', 'bootstrap'], { stdio: 'inherit', shell: true, env: { ...process.env, DATABASE_URL: db.url, ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@example.com', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'changeme' } });
     p.on('exit', code => code === 0 ? res(null) : rej(new Error('bootstrap failed')));
   });
 

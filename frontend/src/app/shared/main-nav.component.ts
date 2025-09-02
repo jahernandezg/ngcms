@@ -3,6 +3,7 @@ import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MenuService, MenuItem } from './menu.service';
 import { ThemeService } from './theme.service';
+import { SiteSettingsService } from './site-settings.service';
 
 @Component({
   selector: 'app-main-nav',
@@ -11,7 +12,13 @@ import { ThemeService } from './theme.service';
   template: `
   <nav class="bg-bg-app backdrop-blur border-b border-border-app shadow-sm mb-4 transition-colors text-text-app" role="navigation" aria-label="Main">
       <div class="container mx-auto px-4 py-2 flex flex-wrap items-center gap-4">
-        <a routerLink="/" class="font-semibold text-lg tracking-tight">CMS</a>
+        <a routerLink="/" class="font-semibold text-lg tracking-tight flex items-center gap-2" aria-label="Inicio">
+          @if (theme.darkMode() ? (settings.settings()?.logoDark || settings.settings()?.logoLight) : (settings.settings()?.logoLight || settings.settings()?.logoDark)) {
+            <img [src]="theme.darkMode() ? (settings.settings()?.logoDark || settings.settings()?.logoLight)! : (settings.settings()?.logoLight || settings.settings()?.logoDark)!" alt="Logo" class="h-8 w-auto" />
+          } @else {
+            {{ settings.settings()?.siteName || 'CMS' }}
+          }
+        </a>
         @if (items().length) {
           <ul class="flex flex-wrap gap-4" role="menubar">
             @for (item of items(); let i = $index; track item.id) {
@@ -72,11 +79,13 @@ export class MainNavComponent implements OnInit {
   readonly items = this.menu.items;
   openSubmenu = signal<string | null>(null);
   theme = inject(ThemeService);
+  settings = inject(SiteSettingsService);
 
   ngOnInit() {
     this.menu.load();
     // Asegura carga de tema solo en contexto público
     this.theme.load();
+  this.settings.load();
   }
 
   isInternal(item: MenuItem) { return item.type !== 'EXTERNAL_LINK'; }

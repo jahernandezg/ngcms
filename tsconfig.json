@@ -1,8 +1,21 @@
 {
-	"extends": "./tsconfig.base.json",
-	"compilerOptions": {
-		"noEmit": true
-	},
-	"files": [],
-	"references": []
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./libs/dynamic-templates"
+    },
+    {
+      "path": "./libs/shared-types"
+    },
+    {
+      "path": "./libs/utils"
+    },
+    {
+      "path": "./libs"
+    }
+  ]
 }

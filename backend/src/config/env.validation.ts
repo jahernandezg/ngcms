@@ -14,5 +14,6 @@ export function validateEnv(config: Record<string, unknown>) {
     PORT: config.PORT ? Number(config.PORT) : 3000,
     NODE_ENV: config.NODE_ENV || 'development',
     SITE_URL: config.SITE_URL || 'http://localhost:4000',
+  UPLOADS_DIR: config.UPLOADS_DIR || undefined,
   };
 }

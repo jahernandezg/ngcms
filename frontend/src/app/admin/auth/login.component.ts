@@ -5,6 +5,7 @@ import { AdminAuthService } from '../services/admin-auth.service';
 import { ToastService } from '../components/toast-container.component';
 import { LoadingDirective } from '../directives/loading.directive';
 import { AlertComponent } from '../components/alert.component';
+import { SiteSettingsService } from '../../shared/site-settings.service';
 
 @Component({
     standalone: true,
@@ -16,6 +17,7 @@ export class LoginComponent {
     private fb = inject(FormBuilder);
     private auth = inject(AdminAuthService);
     private toasts = inject(ToastService);
+    private siteSettings = inject(SiteSettingsService);
     loading = signal(false);
     error = signal<string | null>(null);
     showPassword = false;
@@ -53,4 +55,20 @@ export class LoginComponent {
       const root = document.documentElement;
       root.classList.toggle('dark');
     }
+
+        // Branding logos dinámicos
+        logoLight() {
+            const s = this.siteSettings.settings();
+            return s?.logoLight || s?.logoUrl || '/placeholders/logo-light.svg';
+        }
+        logoDark() {
+            const s = this.siteSettings.settings();
+            return s?.logoDark || s?.logoUrl || '/placeholders/logo-dark.svg';
+        }
+
+        // Descripción/tagline del sitio para el texto de apoyo
+        siteDescription() {
+            const s = this.siteSettings.settings();
+            return s?.tagline || s?.defaultMetaDesc || '';
+        }
 }

@@ -114,7 +114,8 @@ export class PostDetailComponent {
       const p = this.post();
       if (!p) return;
       const path = typeof window !== 'undefined' ? window.location.pathname : `/${p.slug}`;
-      this.seo.set({ title: p.title, description: p.excerpt || p.content, type: 'article', canonical: path });
+  const desc = p.excerpt || this.truncate(p.content, 160);
+  this.seo.set({ title: p.title, description: desc, type: 'article', canonical: path });
     });
   }
 
@@ -200,4 +201,12 @@ export class PostDetailComponent {
     };
     return JSON.stringify(data);
   };
+
+  private truncate(s: string, max: number) {
+    if (!s) return '';
+    if (s.length <= max) return s;
+    const cut = s.slice(0, max);
+    const lastSpace = cut.lastIndexOf(' ');
+    return (lastSpace > 40 ? cut.slice(0, lastSpace) : cut) + '…';
+  }
 }

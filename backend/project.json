@@ -17,19 +17,22 @@
     },
     "serve": {
       "continuous": true,
-      "executor": "@nx/js:node",
-      "defaultConfiguration": "development",
-      "dependsOn": ["build"],
-      "options": { "buildTarget": "backend:build", "runBuildTargetDependencies": false },
-      "configurations": {
-        "development": { "buildTarget": "backend:build:development" },
-        "production": { "buildTarget": "backend:build:production" }
+      "executor": "nx:run-commands",
+      "options": {
+  "command": "node backend/scripts/dev-serve.cjs"
       }
     },
     "serve-ts": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "cross-env TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register backend/src/main.ts"
+  "command": "cross-env TS_NODE_TRANSPILE_ONLY=1 node --loader ts-node/esm backend/src/main.ts"
+      }
+    },
+    "serve-winps": {
+      "continuous": true,
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "powershell -NoProfile -Command \"Start-Job { npx webpack --config backend/webpack.config.js --watch } | Out-Null; Start-Sleep -Seconds 1; node dist/backend/main.js\""
       }
     },
     "lint": {

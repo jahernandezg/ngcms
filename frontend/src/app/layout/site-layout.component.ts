@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MainNavComponent } from '../shared/main-nav.component';
 import { ThemeService } from '../shared/theme.service';
+import { SiteSettingsService } from '../shared/site-settings.service';
 
 @Component({
   standalone: true,
@@ -15,14 +16,15 @@ import { ThemeService } from '../shared/theme.service';
     <main class="flex-1 px-4 py-6">
       <router-outlet />
     </main>
-  <footer class="mt-auto border-t border-border-app text-text-secondary text-xs p-4 text-center opacity-70">© {{ year }} CMS</footer>
+  <footer class="mt-auto border-t border-border-app text-text-secondary text-xs p-4 text-center opacity-70">© {{ year }} {{ settings.settings()?.siteName || 'CMS' }}</footer>
   </div>
   `
 })
 
-export class SiteLayoutComponent implements AfterViewInit { 
+export class SiteLayoutComponent implements AfterViewInit {
   readonly year = new Date().getFullYear();
   #theme = inject(ThemeService);
+  settings = inject(SiteSettingsService);
   @ViewChild('shell', { static: true }) shell!: ElementRef<HTMLDivElement>;
 
   ngAfterViewInit(): void {

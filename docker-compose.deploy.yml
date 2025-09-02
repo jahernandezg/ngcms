@@ -32,8 +32,11 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-cms}?schema=public
       NODE_ENV: production
+      UPLOADS_DIR: /app/uploads
     ports:
       - '127.0.0.1:3000:3000'
+    volumes:
+      - uploads-data:/app/uploads
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
       interval: 10s
@@ -61,3 +64,4 @@ services:
 
 volumes:
   db-data:
+  uploads-data:

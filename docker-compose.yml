@@ -28,8 +28,11 @@ services:
       # El contenedor db expone 5432 internamente; 5433 es el puerto del host.
       DATABASE_URL: postgresql://postgres:postgres@db:5432/cms?schema=public
       NODE_ENV: production
+      UPLOADS_DIR: /app/uploads
     ports:
       - '3000:3000'
+    volumes:
+      - uploads-data:/app/uploads
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:3000/api/health || exit 1']
       interval: 10s
@@ -56,3 +59,4 @@ services:
       retries: 12
 volumes:
   db-data:
+  uploads-data:

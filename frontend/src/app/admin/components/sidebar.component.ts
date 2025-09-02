@@ -141,6 +141,28 @@ import { RouterModule } from '@angular/router';
               </a>
             </li>
 
+            <!-- Branding -->
+            <li>
+              <a
+                routerLink="/admin/settings/branding"
+                routerLinkActive="menu-item-active"
+                #rlaBranding="routerLinkActive"
+                class="menu-item group menu-item-inactive"
+              >
+                <svg
+                  [ngClass]="rlaBranding.isActive ? 'menu-item-icon-active' : 'menu-item-icon-inactive'"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M12 4a8 8 0 100 16 8 8 0 000-16zm1 11H8v-2h5v2zm3-4H8V9h8v2z" fill="" />
+                </svg>
+                <span class="menu-item-text">Branding</span>
+              </a>
+            </li>
+
             <!-- Categories -->
             <li>
               <a
