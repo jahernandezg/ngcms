@@ -89,11 +89,12 @@
         </div>
 
         <div class="flex max-w-xs flex-col items-center">
-          <a href="index.html" class="mb-4 block">
-            <img src="/assets/images/logo-letras-dark.png" alt="Logo">
+          <a href="/" class="mb-4 block">
+            <img [src]="logoDark()" alt="Logo" class="block dark:hidden max-h-16 object-contain">
+            <img [src]="logoDark()" alt="Logo" class="hidden dark:block max-h-16 object-contain">
           </a>
           <p class="text-center text-gray-400 dark:text-white/60">
-            TSinit blog sobre Angular, TypeScript y NestJS.
+            {{ siteDescription() || 'TSinit blog sobre Angular, TypeScript y NestJS' }}
           </p>
         </div>
       </div>

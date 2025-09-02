@@ -2,15 +2,15 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 
-interface CategoryDto { id: string; name: string; slug: string; parentId?: string | null; createdAt: string; }
-interface TagDto { id: string; name: string; slug: string; createdAt: string; }
-interface CreateCategoryDto { name: string; parentSlug?: string; }
-interface UpdateCategoryDto { name?: string; parentSlug?: string; }
-interface CreateTagDto { name: string; }
-interface UpdateTagDto { name?: string; }
+export interface CategoryDto { id: string; name: string; slug: string; parentId?: string | null; createdAt: string; }
+export interface TagDto { id: string; name: string; slug: string; createdAt: string; }
+export interface CreateCategoryDto { name: string; parentSlug?: string; }
+export interface UpdateCategoryDto { name?: string; parentSlug?: string; }
+export interface CreateTagDto { name: string; }
+export interface UpdateTagDto { name?: string; }
 
-interface PaginationMeta { total?: number; page?: number; limit?: number; [k: string]: unknown }
-interface Envelope<T> { success: boolean; data: T; meta?: PaginationMeta; }
+export interface PaginationMeta { total?: number; page?: number; limit?: number; [k: string]: unknown }
+export interface Envelope<T> { success: boolean; data: T; meta?: PaginationMeta; }
 
 @Injectable({ providedIn: 'root' })
 export class TaxonomyService {

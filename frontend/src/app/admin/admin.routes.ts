@@ -21,6 +21,7 @@ export const ADMIN_ROUTES: Routes = [
   { path: 'menu', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./menu/menu-list.component').then(m => m.MenuListComponent) },
   { path: 'themes', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./themes/theme-list.component').then(m => m.ThemeListComponent) },
   { path: 'themes/customize', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./themes/theme-customizer.component').then(m => m.ThemeCustomizerComponent) },
+  { path: 'settings/branding', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./settings/branding.component').then(m => m.BrandingComponent) },
   { path: 'categories', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./taxonomy/category-list.component').then(m => m.CategoryListComponent) },
   { path: 'tags', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./taxonomy/tag-list.component').then(m => m.TagListComponent) },
   { path: 'settings/site', canActivate: [roleGuard], data: { roles: ['ADMIN'] }, loadComponent: () => import('./settings/site-settings.component').then(m => m.SiteSettingsComponent) },

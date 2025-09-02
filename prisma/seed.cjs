@@ -20,11 +20,13 @@ const prisma = new PrismaClient();
 async function main() {
   const adminName = 'Site Admin';
   const adminSlug = slugify(adminName);
-  const adminPasswordHash = await bcrypt.hash('admin123', 10);
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+  const adminPlainPassword = process.env.ADMIN_PASSWORD || 'changeme';
+  const adminPasswordHash = await bcrypt.hash(adminPlainPassword, 10);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
+    where: { email: adminEmail },
     update: { name: adminName, slug: adminSlug, roles: ['ADMIN'] },
-    create: { name: adminName, email: 'admin@example.com', slug: adminSlug, passwordHash: adminPasswordHash, roles: ['ADMIN'] },
+    create: { name: adminName, email: adminEmail, slug: adminSlug, passwordHash: adminPasswordHash, roles: ['ADMIN'] },
   });
   const authorName = 'Author Demo';
   const authorSlug = slugify(authorName);
@@ -105,6 +107,22 @@ async function main() {
     update: { siteName: 'CMS Demo', tagline: 'MVP rápido con Angular + Nest', defaultMetaDesc: 'CMS MVP generado con Nx', logoUrl: null },
     create: { id: 'default', siteName: 'CMS Demo', tagline: 'MVP rápido con Angular + Nest', defaultMetaDesc: 'CMS MVP generado con Nx' }
   });
+  // BlogConfig default
+  const cfg = await prisma.blogConfig.findFirst();
+  if (!cfg) {
+    await prisma.blogConfig.create({
+      data: {
+        blogName: 'Mi Blog Tech',
+        description: 'Blog sobre desarrollo y tecnología',
+        siteUrl: 'http://localhost:4200',
+        locale: 'es-ES',
+        timezone: 'Europe/Madrid',
+        postsPerPage: 10,
+        enableComments: true,
+        metaDescription: 'El mejor blog de tecnología en español',
+      }
+    });
+  }
   console.warn('Seed completada (cjs).');
 }
 

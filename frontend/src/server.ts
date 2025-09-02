@@ -53,9 +53,23 @@ if (!isProd) {
 app.use('/**', (req, res, next) => {
   angularApp
     .handle(req)
-    .then((response) =>
-      response ? writeResponseToNodeResponse(response, res) : next()
-    )
+    .then(async (response) => {
+      if (!response) return next();
+      const contentType = response.headers.get('content-type') || '';
+      // Inyección GA4 en SSR sólo para HTML
+      if (contentType.includes('text/html')) {
+        const analyticsId = process.env['ANALYTICS_ID'];
+        let html = await response.text();
+        if (analyticsId && !html.includes('www.googletagmanager.com/gtag/js')) {
+          const ga = `\n<script async src="https://www.googletagmanager.com/gtag/js?id=${analyticsId}"></script>\n<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config','${analyticsId}');</script>\n`;
+          html = html.replace('</head>', `${ga}</head>`);
+        }
+        res.status(response.status);
+        response.headers.forEach((v, k) => { if (k.toLowerCase() !== 'content-length') res.setHeader(k, v); });
+        return res.send(html);
+      }
+      return writeResponseToNodeResponse(response, res);
+    })
     .catch(next);
 });
 

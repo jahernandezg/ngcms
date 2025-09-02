@@ -102,7 +102,7 @@ export class HomeComponent implements OnInit {
       this.svc.load();
       this.blogLoaded = true;
     }
-    this.seo.set({ title: 'Inicio', description: 'Últimos artículos publicados', canonical: '/' });
+  this.seo.set({ title: 'Inicio', description: 'Últimos artículos publicados', canonical: '/' });
   }
 
   private tryLoadHomepageOrBlogFallback() {

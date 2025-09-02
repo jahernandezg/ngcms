@@ -13,6 +13,9 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { HttpErrorFilter } from './common/filters/http-exception.filter';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
+import * as express from 'express';
+import * as fs from 'fs';
+import * as path from 'path';
 import { httpLog, appLogger } from './common/logging/winston.logger';
 
 // Diagnóstico de fallos silenciosos
@@ -34,7 +37,14 @@ function requestLoggerMiddleware(req: ReqWithId, res: Response, next: () => void
   res.setHeader('x-request-id', req.requestId || '');
   res.on('finish', () => {
     const duration = Date.now() - start;
-    httpLog({ method: req.method, url: req.originalUrl, status: res.statusCode, ms: duration, requestId: req.requestId });
+    const info = { method: req.method, url: req.originalUrl, status: res.statusCode, ms: duration, requestId: req.requestId };
+    httpLog(info);
+    if (res.statusCode >= 500) {
+      // Promover visibilidad de 5xx a error.log
+      appLogger.error({ msg: 'http_error', ...info });
+    } else if (res.statusCode >= 400) {
+      appLogger.warn({ msg: 'http_error', ...info });
+    }
   });
   next();
 }
@@ -58,6 +68,14 @@ async function bootstrap() {
     })
   );
   app.use(requestContextMiddleware, requestLoggerMiddleware);
+  // Static uploads
+  const uploadsDir = process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads');
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  } catch (e) {
+    appLogger.warn({ msg: 'mkdir_uploads_failed', error: (e as Error)?.message });
+  }
+  app.use('/uploads', express.static(uploadsDir, { maxAge: '30d', index: false }));
   // Redirects 301 de rutas legacy a rutas cortas SEO
   app.use((req: Request, res: Response, next: () => void) => {
     // Patrones legacy: /api/posts/category/:slug -> /api/category/:slug
@@ -98,9 +116,11 @@ async function bootstrap() {
   const wrapSuccessResponses = (doc: OpenAPIObject): OpenAPIObject => {
     const successCodes = /^2\d\d$/;
     for (const pathKey of Object.keys(doc.paths || {})) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const pathItem = (doc.paths as Record<string, any>)[pathKey];
       if (!pathItem) continue;
       for (const method of Object.keys(pathItem)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const op = (pathItem as Record<string, any>)[method];
         if (!op || !op.responses) continue;
         for (const code of Object.keys(op.responses)) {

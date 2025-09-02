@@ -16,8 +16,9 @@ export class AdminAuthService {
 
   private buildTokens(user: User) {
     const payload: JwtPayload = { sub: user.id, roles: user.roles, email: user.email };
-    const access = this.jwt.sign(payload, { expiresIn: '15m', secret: process.env.JWT_SECRET || 'dev-secret' });
-    const refresh = this.jwt.sign({ sub: user.id, type: 'refresh' }, { expiresIn: '7d', secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'dev-secret' });
+    // Usar la configuración del JwtModule (secret/alg) sin forzar secretos embebidos
+    const access = this.jwt.sign(payload, { expiresIn: '15m' });
+    const refresh = this.jwt.sign({ sub: user.id, type: 'refresh' }, { expiresIn: '7d' });
   return { accessToken: access, refreshToken: refresh, roles: user.roles };
   }
 
@@ -54,14 +55,15 @@ export class AdminAuthService {
 
   async refresh(token: string) {
     try {
-  const decoded = this.jwt.verify(token, { secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'dev-secret' }) as { sub: string; type: string };
+      // Verificar usando la configuración del JwtModule
+      const decoded = (await this.jwt.verifyAsync(token)) as { sub: string; type?: string };
       if (decoded.type !== 'refresh') throw new Error('invalid');
       const user = await this.prisma.user.findUnique({ where: { id: decoded.sub } });
   if (!user) throw new UnauthorizedException();
   const tokens = this.buildTokens(user);
   await this.audit.log({ userId: user.id, action: 'REFRESH', resource: 'User', resourceId: user.id });
   return tokens;
-    } catch {
+  } catch (_e) {
       throw new UnauthorizedException();
     }
   }

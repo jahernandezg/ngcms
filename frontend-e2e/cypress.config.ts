@@ -13,6 +13,11 @@ export default defineConfig({
       ciBaseUrl: 'http://localhost:4300',
     }),
     baseUrl: 'http://localhost:4300',
-  specPattern: 'src/e2e/journey.cy.ts'
+    // Ejecutar smoke + journey por defecto; admin-branding puede correrse vía CLI con --spec
+    specPattern: ['src/e2e/smoke.cy.ts', 'src/e2e/journey.cy.ts'],
+    env: {
+      ADMIN_EMAIL: process.env["ADMIN_EMAIL"],
+      ADMIN_PASSWORD: process.env["ADMIN_PASSWORD"],
+    },
   },
 });

@@ -157,7 +157,7 @@ model ThemeSettings {
   id              String   @id @default(cuid())
   name            String
   isActive        Boolean  @default(false)
-  
+
   // Color System - Extended palette for visual customization
   primaryColor    String   @default("#2563eb")      // Blue as default (vs old yellow)
   secondaryColor  String   @default("#64748b")      // Slate gray
@@ -170,7 +170,7 @@ model ThemeSettings {
   errorColor      String   @default("#dc2626")      // Error/danger
   successColor    String   @default("#16a34a")      // Success
   warningColor    String   @default("#d97706")      // Warning
-  
+
   // Typography System
   fontHeading     String   @default("Inter")        // Google Font for headings
   fontBody        String   @default("Inter")        // Google Font for body
@@ -178,7 +178,7 @@ model ThemeSettings {
   fontScaleRatio  Float    @default(1.25)          // Type scale ratio
   lineHeightBase  Float    @default(1.6)           // Base line height
   letterSpacing   String   @default("normal")       // Letter spacing
-  
+
   // Layout System
   containerWidth  String      @default("1200px")       // Max container width
   spacingUnit     String      @default("1rem")         // Base spacing unit
@@ -186,29 +186,29 @@ model ThemeSettings {
   borderWidth     String      @default("1px")          // Base border width
   headerStyle     HeaderStyle @default(DEFAULT)        // Header layout style
   footerStyle     FooterStyle @default(DEFAULT)        // Footer layout style
-  
+
   // Component Styling
   buttonStyle     ButtonStyle @default(ROUNDED)        // Button style variant
   cardStyle       CardStyle   @default(ELEVATED)       // Card style variant
   formStyle       String      @default("modern")       // Form input style
   navigationStyle String      @default("horizontal")   // Navigation style
-  
+
   // Advanced Settings
   shadowStyle     ShadowStyle @default(SOFT)           // Shadow style preference
   animationSpeed  String   @default("300ms")        // Animation duration
   customCss       String?                           // Custom CSS overrides
   templatePath    String?                           // Template path (legacy)
   settings        Json?                             // Additional JSON settings
-  
+
   // Theme Metadata
   description     String?                           // Theme description
   category        ThemeCategory @default(GENERAL)   // Theme category (business, blog, portfolio, etc.)
   previewImage    String?                           // Preview screenshot URL
   version         String   @default("1.0.0")       // Theme version
-  
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+
   @@index([isActive])
   @@index([category])
 }
@@ -222,6 +222,45 @@ model SiteSettings {
   faviconUrl      String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model BlogConfig {
+  id               String   @id @default(cuid())
+  // Identidad básica
+  blogName         String   @db.VarChar(100)
+  description      String?  @db.VarChar(255)
+  siteUrl          String?  @db.VarChar(255)
+
+  // Assets visuales
+  logoLight        String?  @db.Text
+  logoDark         String?  @db.Text
+  favicon          String?  @db.Text
+  defaultPostImage String?  @db.Text
+
+  // SEO
+  metaDescription  String?  @db.VarChar(160)
+  keywords         String?  @db.Text
+  analyticsId      String?  @db.VarChar(50)
+  searchConsoleCode String? @db.Text
+  ogImage          String?  @db.Text
+
+  // Contacto
+  contactEmail     String?  @db.VarChar(100)
+  socialTwitter    String?  @db.VarChar(255)
+  socialLinkedIn   String?  @db.VarChar(255)
+  socialGithub     String?  @db.VarChar(255)
+  socialInstagram  String?  @db.VarChar(255)
+
+  // Configuración técnica
+  locale           String   @default("es-ES") @db.VarChar(10)
+  timezone         String   @default("Europe/Madrid") @db.VarChar(50)
+  postsPerPage     Int      @default(10)
+  enableComments   Boolean  @default(true)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("blog_config")
 }
 
 enum PageStatus {

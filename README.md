@@ -2,6 +2,32 @@
 
 Monorepo (Nx) que contiene un backend NestJS + Prisma y un frontend Angular 20 (standalone + signals + SSR) para un blog básico con búsqueda, paginación, SEO y endpoints públicos.
 
+## Branding e Identidad (Release 1.3)
+
+### Endpoints API
+
+- GET /api/blog-config
+- PUT /api/blog-config (ADMIN)
+- POST /api/admin/uploads/:type (ADMIN) — types: logo-light, logo-dark, favicon, og-image, post-image
+- DELETE /api/admin/uploads/:type/:filename (ADMIN)
+
+### Límites y formatos
+
+- Logos: PNG/JPEG/SVG, ≤ 2MB
+- Favicon: ICO o PNG 16/32/48, ≤ 1MB
+- OG y Post image: PNG/JPEG/WEBP, ≤ 3MB
+- Compresión: automática >1MB (sharp)
+
+### SEO y GA4
+
+- GA4 en SSR: define ANALYTICS_ID en el proceso SSR (Angular server) para inyectar script en HTML renderizado.
+- GA4 en cliente: si `analyticsId` está en `/api/blog-config`, el cliente lo inyecta dinámicamente.
+
+### Notas
+
+- Configuración cacheada en memoria 1h; se invalida al hacer PUT.
+- Archivos servidos estáticamente desde `/uploads`.
+
 ## Estado CI
 
 Añade badge tras primer push:

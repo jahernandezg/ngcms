@@ -13,6 +13,8 @@ import { PagesModule } from '../modules/pages/pages.module';
 import { MenuModule } from '../modules/menu/menu.module';
 import { ThemesModule } from '../modules/themes/themes.module';
 import { SiteSettingsModule } from '../modules/site-settings/site-settings.module';
+import { BlogConfigModule } from '../modules/blog-config/blog-config.module';
+import { UploadsModule } from '../modules/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { SiteSettingsModule } from '../modules/site-settings/site-settings.modul
   MenuModule,
   ThemesModule,
   SiteSettingsModule,
+  BlogConfigModule,
+  UploadsModule,
     SearchModule,
   SeoModule,
   AdminModule,

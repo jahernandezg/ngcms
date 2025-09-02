@@ -24,11 +24,13 @@ async function main() {
   // Usuario admin único (creado si no existe) será autor de los posts demo
   const adminName = 'Site Admin';
   const adminSlug = slugify(adminName);
-  const adminPasswordHash = await bcrypt.hash('admin123', 10);
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+  const adminPlainPassword = process.env.ADMIN_PASSWORD || 'changeme';
+  const adminPasswordHash = await bcrypt.hash(adminPlainPassword, 10);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
+    where: { email: adminEmail },
     update: { name: adminName, slug: adminSlug, roles: ['ADMIN'] },
-    create: { name: adminName, email: 'admin@example.com', slug: adminSlug, passwordHash: adminPasswordHash, roles: ['ADMIN'] },
+    create: { name: adminName, email: adminEmail, slug: adminSlug, passwordHash: adminPasswordHash, roles: ['ADMIN'] },
   });
 
   // Usuario AUTHOR demo
@@ -152,23 +154,23 @@ async function main() {
     let sort = 0;
     // HOME (homepage)
     if (homepage) {
-      await prisma.menuItem.create({ data: { title: 'Home', type: 'PAGE', targetId: homepage.id, sortOrder: sort++ } });
+      await prisma.menuItem.create({ data: { title: 'Home', slug: slugify('Home'), type: 'PAGE', targetId: homepage.id, sortOrder: sort++ } });
     }
     // Blog index (listado de posts)
-    await prisma.menuItem.create({ data: { title: 'Blog', type: 'BLOG_INDEX', sortOrder: sort++ } });
+    await prisma.menuItem.create({ data: { title: 'Blog', slug: slugify('Blog'), type: 'BLOG_INDEX', sortOrder: sort++ } });
     // About page (si distinta de homepage)
     if (homepage && homepage.slug !== 'about') {
       const aboutPage = await prisma.page.findUnique({ where: { slug: 'about' } });
-      if (aboutPage) await prisma.menuItem.create({ data: { title: 'About', type: 'PAGE', targetId: aboutPage.id, sortOrder: sort++ } });
+  if (aboutPage) await prisma.menuItem.create({ data: { title: 'About', slug: slugify('About'), type: 'PAGE', targetId: aboutPage.id, sortOrder: sort++ } });
     } else if (homepage && homepage.slug === 'about') {
       // homepage es About, ya representada por Home; omitimos extra
     }
     // Technology category
     if (techCat) {
-      await prisma.menuItem.create({ data: { title: 'Technology', type: 'CATEGORY', targetId: techCat.id, sortOrder: sort++ } });
+  await prisma.menuItem.create({ data: { title: 'Technology', slug: slugify('Technology'), type: 'CATEGORY', targetId: techCat.id, sortOrder: sort++ } });
     }
     // External link ejemplo
-    await prisma.menuItem.create({ data: { title: 'GitHub', type: 'EXTERNAL_LINK', url: 'https://github.com/', openNewWindow: true, sortOrder: sort++ } });
+  await prisma.menuItem.create({ data: { title: 'GitHub', slug: slugify('GitHub'), type: 'EXTERNAL_LINK', url: 'https://github.com/', openNewWindow: true, sortOrder: sort++ } });
   }
 
   console.warn('Seed completada. (incluye menú inicial si estaba vacío)');

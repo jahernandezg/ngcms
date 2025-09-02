@@ -18,7 +18,7 @@ export class SeoService {
     });
   }
 
-  set(opts: { title?: string; description?: string; canonical?: string; type?: string }) {
+  set(opts: { title?: string; description?: string; canonical?: string; type?: string; image?: string }) {
     const settings = this.settingsSvc.settings();
     const baseTitle = settings?.siteName || this.siteName;
     const fullTitle = opts.title ? `${opts.title} | ${baseTitle}` : baseTitle;
@@ -34,7 +34,17 @@ export class SeoService {
     this.meta.updateTag({ property: 'og:title', content: fullTitle });
     this.meta.updateTag({ name: 'twitter:title', content: fullTitle });
     this.meta.updateTag({ property: 'og:type', content: opts.type || 'website' });
-    this.meta.updateTag({ name: 'twitter:card', content: 'summary' });
+    this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+  // og:image: prioridad a opts.image, luego settings (ogImage o defaultPostImage)
+  const og = opts.image || settings?.ogImage || settings?.defaultPostImage || undefined;
+    if (og) {
+      this.meta.updateTag({ property: 'og:image', content: og });
+      this.meta.updateTag({ name: 'twitter:image', content: og });
+    }
+    // site_name
+    if (baseTitle) {
+      this.meta.updateTag({ property: 'og:site_name', content: baseTitle });
+    }
     if (opts.canonical) {
       this.setCanonical(opts.canonical);
     }
