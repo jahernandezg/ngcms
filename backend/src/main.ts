@@ -59,7 +59,10 @@ async function bootstrap() {
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   }));
   app.use(compression());
-  app.enableCors({ origin: true, credentials: true });
+  // CORS: permitir dominios desde env CORS_ORIGINS (coma-separado) o todos si no se define
+  const corsOriginsEnv = process.env.CORS_ORIGINS?.split(',').map((s) => s.trim()).filter(Boolean);
+  const corsOriginOpt = (corsOriginsEnv && corsOriginsEnv.length > 0) ? corsOriginsEnv : true;
+  app.enableCors({ origin: corsOriginOpt, credentials: true });
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
