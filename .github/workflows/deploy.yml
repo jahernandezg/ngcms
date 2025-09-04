@@ -90,7 +90,7 @@ jobs:
             docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml pull || true
 
             # Levantar primero solo la DB
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml up -d db backend db
+            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml up -d db
             # Esperar a que la DB esté lista (usa pg_isready dentro del contenedor)
             echo "Esperando a que la base de datos esté saludable..."
             for i in $(seq 1 60); do
