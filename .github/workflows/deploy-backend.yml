@@ -19,6 +19,8 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME_BACKEND: ${{ github.repository }}-backend
+  # GHCR PAT para docker login en el VPS
+  GHCR_PAT: ${{ secrets.GHCR_PAT }}
 
 jobs:
   build-and-push:
@@ -79,9 +81,12 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script_stop: true
+          envs: GHCR_PAT,GITHUB_ACTOR
           script: |
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
+            # Docker login en GHCR para pulls privados
+            echo "${GHCR_PAT}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
             # Archivo .env.deploy con la imagen de backend
             echo BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }} > .env.deploy
 

@@ -1,0 +1,39 @@
+# SPA fallback for Angular on shared hosting
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  # Skip existing files/directories
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  # Fallback all other routes to index.html
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Optional: Proxy API and uploads to backend (requires mod_proxy enabled)
+# If your hosting does not allow proxy, leave this commented and use CORS from backend.
+<IfModule mod_proxy.c>
+  ProxyPreserveHost On
+  ProxyRequests Off
+
+  # Backend API at https://api.tsinit.com
+  # Proxies /api/* and /uploads/* to backend VPS
+  ProxyPass        /api https://api.tsinit.com/api retry=0 acquire=3000 timeout=600 Keepalive=On
+  ProxyPassReverse /api https://api.tsinit.com/api
+
+  ProxyPass        /uploads https://api.tsinit.com/uploads retry=0 acquire=3000 timeout=600 Keepalive=On
+  ProxyPassReverse /uploads https://api.tsinit.com/uploads
+
+  # Allow cross-origin headers to pass through if needed
+  RequestHeader set X-Forwarded-Proto "https"
+  RequestHeader set X-Forwarded-Host "%{HTTP_HOST}s"
+</IfModule>
+
+# Security headers (basic)
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "no-referrer-when-downgrade"
+  Header set X-XSS-Protection "1; mode=block"
+  Header set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+</IfModule>
