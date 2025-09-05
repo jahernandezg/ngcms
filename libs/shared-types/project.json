@@ -5,6 +5,19 @@
   "projectType": "library",
   "tags": [],
   "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/out-tsc"],
+      "options": {
+        "command": "tsc -p libs/shared-types/tsconfig.lib.json"
+      },
+      "dependsOn": [
+        {
+          "target": "codegen",
+          "projects": "self"
+        }
+      ]
+    },
     "codegen": {
       "executor": "nx:run-commands",
       "options": {
