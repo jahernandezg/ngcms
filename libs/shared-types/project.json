@@ -5,12 +5,28 @@
   "projectType": "library",
   "tags": [],
   "targets": {
+    "codegen": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run openapi:all"
+      },
+      "outputs": [
+        "{projectRoot}/src/lib/openapi-types.ts",
+        "{workspaceRoot}/swagger.json"
+      ]
+    },
     "test": {
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "libs/shared-types/jest.config.ts"
-      }
+      },
+      "dependsOn": [
+        {
+          "target": "codegen",
+          "projects": "self"
+        }
+      ]
     }
   }
 }
