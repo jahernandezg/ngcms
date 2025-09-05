@@ -35,8 +35,8 @@ jobs:
       - name: Unit Tests
         run: npx nx run-many -t test --all --coverage
 
-      - name: Build Backend (with deps)
-        run: npx nx build backend --with-deps
+      - name: Build Backend
+        run: npx nx build backend
 
       - name: Build Frontend
         run: npx nx build frontend
