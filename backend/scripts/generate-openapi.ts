@@ -13,20 +13,21 @@ async function generate() {
     .build();
   let document: OpenAPIObject = SwaggerModule.createDocument(app, config);
 
+  type JsonSchema = Record<string, unknown>;
   const wrapSuccessResponses = (doc: OpenAPIObject): OpenAPIObject => {
     const successCodes = /^2\d\d$/;
     for (const pathKey of Object.keys(doc.paths || {})) {
       const pathItem = (doc.paths?.[pathKey] ?? {}) as Record<string, unknown>;
       if (!pathItem) continue;
       for (const method of Object.keys(pathItem)) {
-    const op = pathItem[method as keyof typeof pathItem] as { responses?: Record<string, any> } | undefined;
+        const op = pathItem[method as keyof typeof pathItem] as { responses?: Record<string, { content?: Record<string, { schema?: JsonSchema }> }> } | undefined;
         if (!op || !op.responses) continue;
         for (const code of Object.keys(op.responses)) {
           if (!successCodes.test(code)) continue;
             const resp = op.responses[code];
             if (!resp?.content?.['application/json']?.schema) continue;
-            const originalSchema = resp.content['application/json'].schema;
-            if (originalSchema?.properties?.success && originalSchema?.properties?.data) continue;
+            const originalSchema = resp.content['application/json'].schema as JsonSchema & { properties?: Record<string, unknown> };
+            if ((originalSchema as { properties?: { success?: unknown; data?: unknown } }).properties?.success && (originalSchema as { properties?: { success?: unknown; data?: unknown } }).properties?.data) continue;
             resp.content['application/json'].schema = {
               type: 'object',
               properties: {
