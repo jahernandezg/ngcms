@@ -64,6 +64,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Ensure deploy path exists
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            mkdir -p "${{ secrets.DEPLOY_PATH }}"
+
       - name: Copy compose to server
         uses: appleboy/scp-action@v0.1.7
         with:
