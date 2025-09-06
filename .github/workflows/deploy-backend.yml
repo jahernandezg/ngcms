@@ -110,18 +110,11 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
             # Docker login en GHCR para pulls privados
             echo "${GHCR_PAT}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
-            # Archivo .env.deploy con la imagen de backend
-            echo BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }} > .env.deploy
+            # Definir la imagen de backend para sustitución de variables en compose
+            export BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
 
-            # Normalizar EOL por si .env/.env.deploy tienen CRLF (Windows)
+            # Normalizar EOL por si .env tiene CRLF (Windows)
             [ -f .env ] && sed -i 's/\r$//' .env || true
-            [ -f .env.deploy ] && sed -i 's/\r$//' .env.deploy || true
-
-            # Exportar variables de .env y .env.deploy para compatibilidad con docker-compose v1/v2
-            set -a
-            [ -f .env ] && . ./.env
-            [ -f .env.deploy ] && . ./.env.deploy
-            set +a
 
             # Detectar comando compose disponible
             if command -v docker-compose >/dev/null 2>&1; then
@@ -133,7 +126,7 @@ jobs:
               exit 1
             fi
 
-            # Pull de servicios necesarios (sin --env-file)
+            # Pull de servicios necesarios
             $DC -f docker-compose.deploy.yml pull db backend || true
 
             # DB primero
@@ -145,16 +138,16 @@ jobs:
 
             # Migraciones y seed opcional
             echo "Prisma migrate deploy..."
-            $DC -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
+            BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
             echo "Verificando necesidad de seed..."
             NEED_SEED=$($DC -f docker-compose.deploy.yml exec -T db psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms} -tAc "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='User') THEN (SELECT CASE WHEN (SELECT COUNT(*) FROM \"User\")=0 THEN 'yes' ELSE 'no' END) ELSE 'yes' END;")
             if [ "$NEED_SEED" = "yes" ]; then
               echo "Prisma db seed..."
-              $DC -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma
+              BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma
             else
               echo "Seed no necesario."
             fi
 
             # Levantar/actualizar backend solamente
-            $DC -f docker-compose.deploy.yml up -d db backend
+            BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml up -d db backend
             docker image prune -f || true
