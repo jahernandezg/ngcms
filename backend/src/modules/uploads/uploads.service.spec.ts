@@ -43,4 +43,38 @@ describe('UploadsService - favicon PNG sizes', () => {
       svc.handleUpload('favicon', { buffer, originalname: 'f20.png', mimetype: 'image/png' })
     ).rejects.toThrow('Favicon PNG debe ser 16x16, 32x32 o 48x48');
   }, 20000);
+
+  it('rechaza MIME no permitido', async () => {
+    const buf = Buffer.from('not-an-image');
+  const badFile = { buffer: buf, originalname: 'x.txt', mimetype: 'text/plain' } as unknown as { buffer: Buffer; originalname: string; mimetype: string };
+  await expect(svc.handleUpload('post-image', badFile)).rejects.toThrow('MIME no permitido');
+  });
+
+  it('rechaza archivo demasiado grande', async () => {
+    const bigBuf = Buffer.alloc(4 * 1024 * 1024); // 4MB para post-image (límite 3MB)
+    await expect(
+      svc.handleUpload('post-image', { buffer: bigBuf, originalname: 'big.jpg', mimetype: 'image/jpeg' })
+    ).rejects.toThrow('Archivo demasiado grande');
+  });
+
+  it('permite SVG para logo-light y guarda tal cual', async () => {
+    const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"></svg>');
+    const res = await svc.handleUpload('logo-light', { buffer: svg, originalname: 'logo.svg', mimetype: 'image/svg+xml' });
+    expect(res.url).toContain('/uploads/logo-light/');
+    const stat = await fs.stat(path.join(tmpDir, 'logo-light', path.basename(res.path)));
+    expect(stat.size).toBeGreaterThan(0);
+  });
+
+  it('permite ICO para favicon y guarda tal cual', async () => {
+    // ICO mínimo inválido en contenido, pero la ruta ICO no usa sharp, sólo escribe
+    const ico = Buffer.from('00000100');
+    const res = await svc.handleUpload('favicon', { buffer: ico, originalname: 'favicon.ico', mimetype: 'image/x-icon' });
+    expect(res.url).toContain('/uploads/favicon/');
+  });
+
+  it('guarda sin procesar si buffer jpeg inválido (no favicon)', async () => {
+    const junk = Buffer.from('JUNK');
+    const res = await svc.handleUpload('post-image', { buffer: junk, originalname: 'junk.jpg', mimetype: 'image/jpeg' });
+    expect(res.url).toContain('/uploads/post-image/');
+  });
 });

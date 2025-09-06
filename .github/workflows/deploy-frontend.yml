@@ -1,0 +1,65 @@
+name: Deploy Frontend (Shared Hosting)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+      - '.github/workflows/deploy-frontend.yml'
+
+concurrency:
+  group: deploy-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build Angular frontend (static)
+        run: |
+          npm run build:frontend
+          test -d dist/frontend/browser
+
+      - name: Deploy via FTP/FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: 'ftp'
+          port: ${{ secrets.FTP_PORT || 21 }}
+          server-dir: ${{ secrets.FTP_REMOTE_DIR }}
+          local-dir: dist/frontend/browser
+          log-level: standard
+          dry-run: false
+          # If your hosting requires deleting files not present in the build, set to true
+          # Be careful: this will remove files not present in the build folder
+          dangerous-clean-slate: false
+
+      # Alternative SFTP deploy (commented). Uncomment and remove the FTP step above if using SFTP.
+      # - name: Deploy via SFTP
+      #   uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+      #   with:
+      #     server: ${{ secrets.SSH_HOST }}
+      #     username: ${{ secrets.SSH_USER }}
+      #     ssh_private_key: ${{ secrets.SSH_KEY }}
+      #     local_path: dist/frontend/browser/*
+      #     remote_path: ${{ secrets.SSH_REMOTE_DIR }}
+      #     delete_remote_files: false

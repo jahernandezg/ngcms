@@ -5,12 +5,41 @@
   "projectType": "library",
   "tags": [],
   "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/out-tsc"],
+      "options": {
+        "command": "tsc -p libs/shared-types/tsconfig.lib.json"
+      },
+      "dependsOn": [
+        {
+          "target": "codegen",
+          "projects": "self"
+        }
+      ]
+    },
+    "codegen": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run openapi:all"
+      },
+      "outputs": [
+        "{projectRoot}/src/lib/openapi-types.ts",
+        "{workspaceRoot}/swagger.json"
+      ]
+    },
     "test": {
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "libs/shared-types/jest.config.ts"
-      }
+      },
+      "dependsOn": [
+        {
+          "target": "codegen",
+          "projects": "self"
+        }
+      ]
     }
   }
 }

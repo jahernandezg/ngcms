@@ -64,11 +64,11 @@ export class BlogConfigService {
   }
 
   private setCache(val: BlogConfigEntity) { this.cache = val; this.cacheAt = Date.now(); }
-  private isFresh() { return this.cache && (Date.now() - this.cacheAt) < this.ttlMs; }
+  private isFresh(): boolean { return !!this.cache && (Date.now() - this.cacheAt) < this.ttlMs; }
   invalidate() { this.cache = null; this.cacheAt = 0; }
 
-  async get() {
-    if (this.isFresh()) return this.cache;
+  async get(): Promise<BlogConfigEntity> {
+    if (this.isFresh()) return this.cache as BlogConfigEntity;
     let cfg = await this.prisma.blogConfig.findFirst();
     if (!cfg) {
       const data = { blogName: 'Mi Blog' };
@@ -78,7 +78,7 @@ export class BlogConfigService {
     return cfg;
   }
 
-  async update(dto: UpdateBlogConfigDto) {
+  async update(dto: UpdateBlogConfigDto): Promise<BlogConfigEntity> {
     const data = this.sanitize(dto);
     const existing = await this.prisma.blogConfig.findFirst();
     // Si no existe aún, crea con defaults + posibles datos

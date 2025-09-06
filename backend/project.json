@@ -11,6 +11,7 @@
         "command": "webpack-cli build",
         "args": ["--node-env=production"]
       },
+  "dependsOn": ["^build"],
       "configurations": {
         "development": { "args": ["--node-env=development"] }
       }

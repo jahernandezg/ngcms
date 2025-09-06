@@ -8,12 +8,31 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+// Cargar .env si existe y establecer defaults locales para desarrollo/E2E
+try {
+  if (fs.existsSync(path.join(process.cwd(), '.env'))) {
+    require('dotenv').config();
+  }
+} catch (_e) {
+  // noop
+}
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5433/cms?schema=public';
+process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+process.env.PORT = process.env.PORT || '3000';
 
 const distMain = path.join(process.cwd(), 'dist', 'backend', 'main.js');
 
 let webpackProc = null;
 let nodeProc = null;
 let restarting = false;
+
+// Defaults de entorno para desarrollo si no existen
+process.env.PORT = process.env.PORT || '3000';
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5433/cms?schema=public';
+process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+// Nota: en CI ya se establecen; aquí sólo damos valores por defecto locales
 
 function startWebpackWatch() {
   webpackProc = spawn('npx', ['webpack', '--config', 'backend/webpack.config.js', '--watch'], { stdio: 'inherit', shell: true });
