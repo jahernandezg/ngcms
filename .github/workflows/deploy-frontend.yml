@@ -11,6 +11,7 @@ on:
       - 'nx.json'
       - 'tsconfig.base.json'
       - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
 
 concurrency:
   group: deploy-frontend-${{ github.ref }}
@@ -35,6 +36,7 @@ jobs:
       - name: Build Angular frontend (static)
         run: |
           npm run build:frontend
+          ls -la dist/frontend || true
           test -d dist/frontend/browser
 
       - name: Deploy via FTP/FTPS
