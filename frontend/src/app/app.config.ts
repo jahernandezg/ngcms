@@ -12,6 +12,7 @@ import {
   withEventReplay,
 } from '@angular/platform-browser';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import { apiBaseInterceptor } from './shared/api-base.interceptor';
 import { authInterceptor } from './admin/interceptors/auth.interceptor';
 import { loadingInterceptor } from './admin/interceptors/loading.interceptor';
 import { errorInterceptor } from './admin/interceptors/error.interceptor';
@@ -26,6 +27,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withFetch(),
       withInterceptors([
+        apiBaseInterceptor,
         loadingInterceptor,
         authInterceptor,
         errorInterceptor
