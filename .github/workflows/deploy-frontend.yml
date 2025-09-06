@@ -67,7 +67,7 @@ jobs:
           protocol: 'ftp'
           port: ${{ secrets.FTP_PORT || 21 }}
           server-dir: ${{ secrets.FTP_REMOTE_DIR }}
-          local-dir: dist/frontend/browser
+          local-dir: dist/frontend/browser/
           log-level: standard
           dry-run: false
           # If your hosting requires deleting files not present in the build, set to true
