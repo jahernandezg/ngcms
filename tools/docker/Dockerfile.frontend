@@ -1,18 +1,23 @@
 FROM node:20.19.0-alpine AS builder
 WORKDIR /workspace
+# Copiar package.json y lock para instalar deps
 COPY package*.json ./
+# Copiar prisma antes de npm ci para que postinstall (prisma generate) encuentre el schema
+COPY prisma ./prisma
 RUN npm ci --no-audit --no-fund --legacy-peer-deps
+# Copiar el resto del código
 COPY . .
+# Construir el frontend con Nx (SSR)
 RUN npm run build:frontend
-# Prune to production dependencies only
+# Reducir a dependencias de producción
 RUN npm prune --omit=dev
 
 FROM node:20.19.0-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-# healthcheck dependency
+# Dependencia para healthcheck
 RUN apk add --no-cache curl
-# Copy dist and pruned node_modules
+# Copiar artefactos de build y node_modules pruned
 COPY --from=builder /workspace/dist/frontend /app/dist/frontend
 COPY --from=builder /workspace/node_modules /app/node_modules
 COPY --from=builder /workspace/package.json /app/
