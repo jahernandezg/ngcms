@@ -25,7 +25,7 @@ async function main() {
   const adminName = 'Site Admin';
   const adminSlug = slugify(adminName);
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-  const adminPlainPassword = process.env.ADMIN_PASSWORD || 'changeme';
+  const adminPlainPassword = process.env.ADMIN_PASSWORD || 'admin123';
   const adminPasswordHash = await bcrypt.hash(adminPlainPassword, 10);
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
