@@ -113,6 +113,10 @@ jobs:
             # Archivo .env.deploy con la imagen de backend
             echo BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }} > .env.deploy
 
+            # Normalizar EOL por si .env/.env.deploy tienen CRLF (Windows)
+            [ -f .env ] && sed -i 's/\r$//' .env || true
+            [ -f .env.deploy ] && sed -i 's/\r$//' .env.deploy || true
+
             # Exportar variables de .env y .env.deploy para compatibilidad con docker-compose v1/v2
             set -a
             [ -f .env ] && . ./.env
