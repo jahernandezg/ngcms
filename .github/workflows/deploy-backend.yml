@@ -113,28 +113,44 @@ jobs:
             # Archivo .env.deploy con la imagen de backend
             echo BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }} > .env.deploy
 
-            # Pull de servicios necesarios
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml pull db backend || true
+            # Exportar variables de .env y .env.deploy para compatibilidad con docker-compose v1/v2
+            set -a
+            [ -f .env ] && . ./.env
+            [ -f .env.deploy ] && . ./.env.deploy
+            set +a
+
+            # Detectar comando compose disponible
+            if command -v docker-compose >/dev/null 2>&1; then
+              DC="docker-compose"
+            elif docker compose version >/dev/null 2>&1; then
+              DC="docker compose"
+            else
+              echo "Error: ni 'docker-compose' ni 'docker compose' disponibles" >&2
+              exit 1
+            fi
+
+            # Pull de servicios necesarios (sin --env-file)
+            $DC -f docker-compose.deploy.yml pull db backend || true
 
             # DB primero
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml up -d db
+            $DC -f docker-compose.deploy.yml up -d db
             echo "Esperando DB saludable..."
             for i in $(seq 1 60); do
-              if docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml exec -T db pg_isready -U ${POSTGRES_USER:-postgres} ; then
+              if $DC -f docker-compose.deploy.yml exec -T db pg_isready -U ${POSTGRES_USER:-postgres} ; then
                 echo "DB lista"; break; fi; sleep 2; done
 
             # Migraciones y seed opcional
             echo "Prisma migrate deploy..."
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
+            $DC -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
             echo "Verificando necesidad de seed..."
-            NEED_SEED=$(docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml exec -T db psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms} -tAc "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='User') THEN (SELECT CASE WHEN (SELECT COUNT(*) FROM \"User\")=0 THEN 'yes' ELSE 'no' END) ELSE 'yes' END;")
+            NEED_SEED=$($DC -f docker-compose.deploy.yml exec -T db psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms} -tAc "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='User') THEN (SELECT CASE WHEN (SELECT COUNT(*) FROM \"User\")=0 THEN 'yes' ELSE 'no' END) ELSE 'yes' END;")
             if [ "$NEED_SEED" = "yes" ]; then
               echo "Prisma db seed..."
-              docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma
+              $DC -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma
             else
               echo "Seed no necesario."
             fi
 
             # Levantar/actualizar backend solamente
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml up -d db backend
+            $DC -f docker-compose.deploy.yml up -d db backend
             docker image prune -f || true
