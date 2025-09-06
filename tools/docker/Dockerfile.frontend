@@ -1,7 +1,7 @@
 FROM node:20.16.0-alpine AS builder
 WORKDIR /workspace
 COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund --legacy-peer-deps
 COPY . .
 RUN npm run build:frontend
 # Prune to production dependencies only
