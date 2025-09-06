@@ -21,6 +21,8 @@ env:
   IMAGE_NAME_BACKEND: ${{ github.repository }}-backend
   # GHCR PAT para docker login en el VPS
   GHCR_PAT: ${{ secrets.GHCR_PAT }}
+  # Usuario para ghcr (si tu PAT es de otra cuenta/owner)
+  GHCR_USER: ${{ secrets.GHCR_USER || github.actor }}
 
 jobs:
   build-and-push:
@@ -104,7 +106,7 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           script_stop: true
-          envs: GHCR_PAT,GITHUB_ACTOR
+          envs: GHCR_PAT,GHCR_USER,GITHUB_ACTOR
           script: |
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
