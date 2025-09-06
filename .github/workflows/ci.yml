@@ -73,7 +73,7 @@ jobs:
         run: npx nx build frontend
 
       - name: Backend E2E (smoke)
-        run: npx nx e2e backend-e2e --ci
+        run: npx nx e2e backend-e2e --ci --runInBand
 
       - name: Frontend E2E (smoke)
         run: npx nx e2e frontend-e2e --ci
