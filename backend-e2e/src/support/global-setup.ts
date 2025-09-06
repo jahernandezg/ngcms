@@ -28,6 +28,33 @@ module.exports = async function () {
     console.warn('[backend-e2e] seed falló, continúo por si ya estaba poblada:', (e as Error)?.message);
   }
 
+  // Endurecer credenciales para e2e: asegurar hash y reset de intentos
+  try {
+    const { PrismaClient } = require('@prisma/client');
+    const bcrypt = require('bcryptjs');
+    const prisma = new PrismaClient();
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+    const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
+    const authorEmail = 'author@example.com';
+    const authorPass = 'author123';
+    const adminHash = await bcrypt.hash(adminPass, 10);
+    const authorHash = await bcrypt.hash(authorPass, 10);
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: { passwordHash: adminHash, failedAttempts: 0, lockedUntil: null, roles: { set: ['ADMIN'] } },
+      create: { email: adminEmail, name: 'Site Admin', slug: 'site-admin', passwordHash: adminHash, roles: ['ADMIN'] },
+    });
+    await prisma.user.upsert({
+      where: { email: authorEmail },
+      update: { passwordHash: authorHash, failedAttempts: 0, lockedUntil: null, roles: { set: ['AUTHOR'] } },
+      create: { email: authorEmail, name: 'Author Demo', slug: 'author-demo', passwordHash: authorHash, roles: ['AUTHOR'] },
+    });
+    await prisma.$disconnect();
+    console.log('[backend-e2e] credenciales de admin/author aseguradas');
+  } catch (e) {
+    console.warn('[backend-e2e] no se pudo asegurar credenciales:', (e as Error)?.message);
+  }
+
   const host = process.env.HOST ?? 'localhost';
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   // Comprobación rápida del puerto (300ms)
