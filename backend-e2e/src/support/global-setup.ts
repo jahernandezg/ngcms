@@ -1,5 +1,6 @@
 import { waitForPortOpen } from '@nx/node/utils';
-import { execSync } from 'child_process';
+import { execSync, spawn } from 'child_process';
+import * as net from 'net';
 
 /* eslint-disable */
 var __TEARDOWN_MESSAGE__: string;
@@ -29,6 +30,19 @@ module.exports = async function () {
 
   const host = process.env.HOST ?? 'localhost';
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+  // Comprobación rápida del puerto (300ms)
+  const isOpen = await new Promise<boolean>((resolve) => {
+    const socket = net.createConnection({ host, port });
+    let resolved = false;
+    const done = (val: boolean) => { if (!resolved) { resolved = true; try { socket.destroy(); } catch {} resolve(val); } };
+    socket.once('connect', () => done(true));
+    socket.once('error', () => done(false));
+    setTimeout(() => done(false), 300);
+  });
+  if (!isOpen) {
+    console.log('[backend-e2e] backend no detectado en puerto', port, '-> iniciando nx serve backend');
+    spawn('npx', ['nx', 'serve', 'backend'], { stdio: 'inherit', shell: true, env: process.env });
+  }
   await waitForPortOpen(port, { host });
 
   // Hint: Use `globalThis` to pass variables to global teardown.
