@@ -1,13 +1,14 @@
 # Backend Dockerfile (multi-stage)
-FROM node:20.16.0-alpine AS builder
+FROM node:20.19.0-alpine AS builder
 WORKDIR /workspace
 COPY package*.json ./
+COPY prisma ./prisma
 RUN npm ci --no-audit --fund=false --legacy-peer-deps
 COPY . .
 # Build backend with Nx (outputs to dist/backend)
 RUN npx nx build backend
 
-FROM node:20.16.0-alpine AS runner
+FROM node:20.19.0-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 # curl for container healthcheck
