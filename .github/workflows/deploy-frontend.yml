@@ -48,6 +48,10 @@ jobs:
             printf "export {}\n" > libs/shared-types/src/lib/openapi-types.ts
           fi
 
+      - name: Disable openapi:all during Nx codegen (CI)
+        run: |
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.scripts=p.scripts||{};p.scripts['openapi:all']='echo openapi generation skipped in deploy-frontend';fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+
       - name: Build Angular frontend (static)
         run: |
           npm run build:frontend
