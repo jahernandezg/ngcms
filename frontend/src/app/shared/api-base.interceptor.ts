@@ -7,7 +7,7 @@ function getApiBase(): string | null {
     if (meta?.content) return meta.content.replace(/\/$/, '');
   }
   // Fallback a variable de entorno de ejecución (SSR) si se inyecta
-  const fromEnv = typeof process !== 'undefined' ? (process.env?.API_BASE as string | undefined) : undefined;
+  const fromEnv = typeof process !== 'undefined' ? (process.env?.['API_BASE'] as unknown as string | undefined) : undefined;
   if (fromEnv) return fromEnv.replace(/\/$/, '');
   // Fallback final: dominio de API por defecto
   return 'https://api.tsinit.com';
