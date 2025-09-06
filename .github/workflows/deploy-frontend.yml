@@ -34,7 +34,8 @@ jobs:
         run: npm ci --no-audit --no-fund --legacy-peer-deps
 
       - name: Skip OpenAPI types generation in deploy
-        run: npm set-script openapi:types "echo 'skipped in deploy-frontend'"
+        run: |
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.scripts=p.scripts||{};p.scripts['openapi:types']='echo skipped in deploy-frontend';fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
       - name: Build Angular frontend (static)
         run: |
