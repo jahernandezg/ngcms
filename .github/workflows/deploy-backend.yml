@@ -108,8 +108,11 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
-            # Docker login en GHCR para pulls privados
-            echo "${GHCR_PAT}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+            # Docker login en GHCR para pulls privados (usar GHCR_USER si está definido, si no GITHUB_ACTOR)
+            if [ -z "${GHCR_PAT}" ]; then echo "Falta secreto GHCR_PAT" >&2; exit 1; fi
+            USER_FOR_GHCR="${GHCR_USER:-${GITHUB_ACTOR}}"
+            echo "Autenticando en ghcr.io como ${USER_FOR_GHCR}"
+            echo "${GHCR_PAT}" | docker login ghcr.io -u "${USER_FOR_GHCR}" --password-stdin
             # Definir la imagen de backend para sustitución de variables en compose
             export BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
 
