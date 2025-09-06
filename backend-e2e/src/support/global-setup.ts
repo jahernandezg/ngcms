@@ -45,6 +45,24 @@ module.exports = async function () {
   }
   await waitForPortOpen(port, { host });
 
+  // Esperar a que el backend esté sano (no solo que el puerto esté abierto)
+  try {
+    const axios = require('axios');
+    const base = `http://${host}:${port}`;
+    const deadline = Date.now() + 60000; // hasta 60s
+    let ok = false;
+    while (Date.now() < deadline) {
+      try {
+        const res = await axios.get(base + '/api/health', { timeout: 2000, validateStatus: () => true });
+        if (res.status === 200) { ok = true; break; }
+      } catch {}
+      await new Promise(r => setTimeout(r, 500));
+    }
+    if (!ok) console.warn('[backend-e2e] aviso: /api/health no respondió 200 antes del timeout');
+  } catch (e) {
+    console.warn('[backend-e2e] no se pudo comprobar /api/health:', (e as Error)?.message);
+  }
+
   // Hint: Use `globalThis` to pass variables to global teardown.
   (globalThis as typeof globalThis & { __TEARDOWN_MESSAGE__?: string }).__TEARDOWN_MESSAGE__ =
     '\nTearing down...\n';
