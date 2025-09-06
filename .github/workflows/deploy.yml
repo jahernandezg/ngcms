@@ -8,7 +8,6 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME_BACKEND: ${{ github.repository }}-backend
-  IMAGE_NAME_FRONTEND: ${{ github.repository }}-frontend
 
 jobs:
   build-and-push:
@@ -40,21 +39,10 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
 
-      - name: Build and push frontend image (Angular compila en el build)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: tools/docker/Dockerfile.frontend
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}
-
       - name: Persist image tags
         id: meta
         run: |
           echo "BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}" >> $GITHUB_OUTPUT
-          echo "FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build-and-push
@@ -63,7 +51,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Copy compose and env to server
+      - name: Copy compose to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -73,45 +61,47 @@ jobs:
             docker-compose.deploy.yml
           target: ${{ secrets.DEPLOY_PATH }}
 
-      - name: Deploy via SSH
+      - name: Deploy via SSH (backend only)
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script_stop: true
+          envs: GITHUB_ACTOR,GHCR_PAT
           script: |
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
-            # Crear archivo .env.deploy con las imágenes y exportarlas como variables
-            echo BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }} > .env.deploy
-            echo FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${{ github.sha }} >> .env.deploy
-            # Descargar imágenes (si cambian)
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml pull || true
 
-            # Levantar primero solo la DB
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml up -d db
-            # Esperar a que la DB esté lista (usa pg_isready dentro del contenedor)
-            echo "Esperando a que la base de datos esté saludable..."
+            # Login GHCR para pulls privados
+            echo "${GHCR_PAT}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+
+            # Imagen backend a usar por compose
+            export BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
+
+            # Elegir comando compose disponible
+            if command -v docker-compose >/dev/null 2>&1; then DC="docker-compose"; else DC="docker compose"; fi
+
+            # Pull y arranque DB
+            $DC -f docker-compose.deploy.yml pull db backend || true
+            $DC -f docker-compose.deploy.yml up -d db
+
+            echo "Esperando DB saludable..."
             for i in $(seq 1 60); do
-              if docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml exec -T db pg_isready -U postgres ; then
-                echo "DB lista"; break; fi; sleep 2; done
+              if $DC -f docker-compose.deploy.yml exec -T db pg_isready -U ${POSTGRES_USER:-postgres} ; then echo "DB lista"; break; fi; sleep 2; done
 
-            # Ejecutar migraciones antes de levantar backend/frontend
-            echo "Ejecutando prisma migrate deploy..."
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
+            echo "Prisma migrate deploy..."
+            BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
 
-            # Seed opcional: si la tabla User está vacía, correr prisma db seed
-            echo "Verificando si es necesario seed..."
-            NEED_SEED=$(docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml exec -T db psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms} -tAc "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='User') THEN (SELECT CASE WHEN (SELECT COUNT(*) FROM \"User\")=0 THEN 'yes' ELSE 'no' END) ELSE 'yes' END;")
+            echo "Verificando necesidad de seed..."
+            NEED_SEED=$($DC -f docker-compose.deploy.yml exec -T db psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms} -tAc "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='User') THEN (SELECT CASE WHEN (SELECT COUNT(*) FROM \"User\")=0 THEN 'yes' ELSE 'no' END) ELSE 'yes' END;")
             if [ "$NEED_SEED" = "yes" ]; then
-              echo "Ejecutando prisma db seed..."
-              docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma
+              echo "Prisma db seed..."
+              BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma
             else
               echo "Seed no necesario."
             fi
 
-            # Levantar/actualizar backend y frontend
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml up -d db backend
-            # Limpieza opcional
+            # Levantar backend
+            BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml up -d db backend
             docker image prune -f || true
