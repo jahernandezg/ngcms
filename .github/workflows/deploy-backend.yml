@@ -64,12 +64,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Comprobación previa de conectividad SSH
+        shell: bash
+        run: |
+          set -e
+          HOST="${{ secrets.DEPLOY_HOST }}"
+          PORT="${{ secrets.DEPLOY_PORT }}"
+          if [ -z "$PORT" ]; then PORT=22; fi
+          echo "Verificando conexión a $HOST:$PORT"
+          timeout 10 bash -lc "cat < /dev/null > /dev/tcp/$HOST/$PORT" && echo "OK" || (echo "No se puede conectar a $HOST:$PORT" && exit 1)
+
       - name: Ensure deploy path exists
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
           script_stop: true
           script: |
             mkdir -p "${{ secrets.DEPLOY_PATH }}"
@@ -80,6 +91,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
           source: |
             docker-compose.deploy.yml
           target: ${{ secrets.DEPLOY_PATH }}
@@ -90,6 +102,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
           script_stop: true
           envs: GHCR_PAT,GITHUB_ACTOR
           script: |
