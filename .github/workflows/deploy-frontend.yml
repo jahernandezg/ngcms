@@ -33,8 +33,18 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund --legacy-peer-deps
 
-      - name: Generate OpenAPI types
-        run: npm run openapi:all
+      - name: Generate OpenAPI types (from live API)
+        run: |
+          set -e
+          URL="${OPENAPI_URL:-https://api.tsinit.com/api-json}"
+          echo "Fetching OpenAPI from $URL"
+          if curl -fsSL "$URL" -o swagger.json; then
+            npx openapi-typescript swagger.json --output libs/shared-types/src/lib/openapi-types.ts
+          else
+            echo "Warning: cannot fetch OpenAPI JSON; generating placeholder types"
+            mkdir -p libs/shared-types/src/lib
+            printf "export {}\n" > libs/shared-types/src/lib/openapi-types.ts
+          fi
 
       - name: Build Angular frontend (static)
         run: |
