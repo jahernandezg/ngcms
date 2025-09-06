@@ -20,6 +20,8 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      OPENAPI_URL: ${{ vars.OPENAPI_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,7 +38,7 @@ jobs:
       - name: Generate OpenAPI types (from live API)
         run: |
           set -e
-          URL="${OPENAPI_URL:-https://api.tsinit.com/api-json}"
+          URL="${OPENAPI_URL:-https://api.tsinit.com/api/docs-json}"
           echo "Fetching OpenAPI from $URL"
           if curl -fsSL "$URL" -o swagger.json; then
             npx openapi-typescript swagger.json --output libs/shared-types/src/lib/openapi-types.ts
