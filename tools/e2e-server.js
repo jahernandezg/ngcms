@@ -53,6 +53,8 @@ async function main() {
     });
   } else {
     console.warn('[e2e] Frontend already running on port 4300.');
+  // Esperar a que el frontend esté escuchando también (Vite/Nx tarda un poco)
+  await waitForPort(frontendPort, 90000);
   }
 
   if (backend) backend.on('exit', code => process.exit(code || 1));
