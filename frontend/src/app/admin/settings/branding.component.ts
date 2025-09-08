@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AlertComponent } from '../components/alert.component';
+import { buildAssetUrl } from '../../shared/asset-url.util';
 
 interface BlogConfig {
   blogName: string;
@@ -63,7 +64,7 @@ function unwrap<T>(r: Envelope<T> | T): T { return isEnvelope<T>(r) ? r.data : r
           <label for="logoLight" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Logo Light</label>
           <div class="flex items-start gap-4">
             <div class="w-40 h-16 border rounded-md bg-white flex items-center justify-center overflow-hidden dark:border-gray-700">
-              <img [src]="form.value.logoLight || '/placeholders/logo-light.svg'" alt="logo light" class="max-h-16 object-contain"/>
+              <img [src]="buildPreview(form.value.logoLight) || '/placeholders/logo-light.svg'" alt="logo light" class="max-h-16 object-contain"/>
             </div>
             <div class="flex-1 space-y-2">
               <input id="logoLight" type="text" formControlName="logoLight" placeholder="https://.../logo-light.svg" class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"/>
@@ -81,7 +82,7 @@ function unwrap<T>(r: Envelope<T> | T): T { return isEnvelope<T>(r) ? r.data : r
           <label for="logoDark" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Logo Dark</label>
           <div class="flex items-start gap-4">
             <div class="w-40 h-16 border rounded-md bg-gray-900 flex items-center justify-center overflow-hidden dark:border-gray-700">
-              <img [src]="form.value.logoDark || '/placeholders/logo-dark.svg'" alt="logo dark" class="max-h-16 object-contain"/>
+              <img [src]="buildPreview(form.value.logoDark) || '/placeholders/logo-dark.svg'" alt="logo dark" class="max-h-16 object-contain"/>
             </div>
             <div class="flex-1 space-y-2">
               <input id="logoDark" type="text" formControlName="logoDark" placeholder="https://.../logo-dark.svg" class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"/>
@@ -104,7 +105,7 @@ function unwrap<T>(r: Envelope<T> | T): T { return isEnvelope<T>(r) ? r.data : r
           <label for="favicon" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Favicon</label>
           <div class="flex items-start gap-4">
             <div class="w-16 h-16 border rounded-md bg-white flex items-center justify-center overflow-hidden dark:border-gray-700">
-              <img [src]="form.value.favicon || '/placeholders/favicon.svg'" alt="favicon" class="max-h-12 object-contain"/>
+              <img [src]="buildPreview(form.value.favicon) || '/placeholders/favicon.svg'" alt="favicon" class="max-h-12 object-contain"/>
             </div>
             <div class="flex-1 space-y-2">
               <input id="favicon" type="text" formControlName="favicon" placeholder="https://.../favicon.ico" class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"/>
@@ -122,7 +123,7 @@ function unwrap<T>(r: Envelope<T> | T): T { return isEnvelope<T>(r) ? r.data : r
           <label for="ogImage" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Imagen OG</label>
           <div class="flex items-start gap-4">
             <div class="w-full max-w-[320px] h-32 border rounded-md bg-white flex items-center justify-center overflow-hidden dark:border-gray-700">
-              <img [src]="form.value.ogImage || '/placeholders/og-image.svg'" alt="og image" class="max-h-28 object-contain"/>
+              <img [src]="buildPreview(form.value.ogImage) || '/placeholders/og-image.svg'" alt="og image" class="max-h-28 object-contain"/>
             </div>
             <div class="flex-1 space-y-2">
               <input id="ogImage" type="text" formControlName="ogImage" placeholder="https://.../og-image.png" class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"/>
@@ -143,7 +144,7 @@ function unwrap<T>(r: Envelope<T> | T): T { return isEnvelope<T>(r) ? r.data : r
         <label for="defaultPostImage" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Imagen por defecto de post</label>
         <div class="flex items-start gap-4">
           <div class="w-full max-w-[320px] h-32 border rounded-md bg-white flex items-center justify-center overflow-hidden dark:border-gray-700">
-            <img [src]="form.value.defaultPostImage || '/placeholders/post-image.svg'" alt="post image" class="max-h-28 object-contain"/>
+            <img [src]="buildPreview(form.value.defaultPostImage) || '/placeholders/post-image.svg'" alt="post image" class="max-h-28 object-contain"/>
           </div>
           <div class="flex-1 space-y-2">
             <input id="defaultPostImage" type="text" formControlName="defaultPostImage" placeholder="https://.../default-post.png" class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"/>
@@ -260,6 +261,10 @@ export class BrandingComponent implements OnInit {
   locale: ['es-ES'], timezone: ['Europe/Madrid'], postsPerPage: [10], enableComments: [true],
   });
 
+  buildPreview(u?: string | null): string | null {
+    return buildAssetUrl(u);
+  }
+
   ngOnInit() { this.load(); }
 
   load() {
@@ -326,12 +331,13 @@ export class BrandingComponent implements OnInit {
     const fd = new FormData();
     fd.append('file', file);
     type UploadRes = { url: string; path?: string };
-    this.http.post<Envelope<UploadRes> | UploadRes>(`/api/admin/uploads/${type}`, fd).subscribe({
+  this.http.post<Envelope<UploadRes> | UploadRes>(`/api/admin/uploads/${type}`, fd).subscribe({
       next: (resp) => {
         const u = unwrap<UploadRes>(resp);
+    const absolute = buildAssetUrl(u.url) ?? u.url;
         const map: Record<string, string> = { 'logo-light': 'logoLight', 'logo-dark': 'logoDark', 'favicon': 'favicon', 'og-image': 'ogImage', 'post-image': 'defaultPostImage' };
         const ctrl = this.form.get(map[type]);
-        ctrl?.setValue(u.url);
+    ctrl?.setValue(absolute);
         ctrl?.markAsDirty({ onlySelf: true });
         ctrl?.updateValueAndValidity({ onlySelf: true });
       },

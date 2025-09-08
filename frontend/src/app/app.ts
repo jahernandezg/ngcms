@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, effect } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { SiteSettingsService } from './shared/site-settings.service';
+import { buildAssetUrl } from './shared/asset-url.util';
 import { Meta } from '@angular/platform-browser';
 
 @Component({
@@ -17,7 +18,7 @@ export class App implements OnInit {
   // actualiza favicon cuando settings cambian
   constructor(){
     effect(() => {
-      const fav = this.siteSettings.settings()?.faviconUrl || null;
+  const fav = buildAssetUrl(this.siteSettings.settings()?.faviconUrl) || null;
       if (typeof document !== 'undefined' && fav) {
         let link: HTMLLinkElement | null = document.querySelector('link[rel="icon"]');
         if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }

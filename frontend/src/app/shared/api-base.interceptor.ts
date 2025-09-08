@@ -1,16 +1,34 @@
-import { HttpInterceptorFn, HttpRequest } from '@angular/common/http';
+import { HttpInterceptorFn } from '@angular/common/http';
 
-function getApiBase(): string | null {
-  // Prefer meta tag so puede cambiar sin rebuild si fuese necesario
+// Exportable para reutilizar en helpers de assets
+export function getApiBase(): string {
+  // Modo navegador: permite configurar sin rebuild vía window.__env o meta
+  if (typeof window !== 'undefined') {
+    const anyWin = window as unknown as { __env?: Record<string, string> };
+    const fromWindow = anyWin.__env?.['API_BASE'] || anyWin.__env?.['API_URL'];
+    if (fromWindow) {
+      const trimmed = fromWindow.replace(/\/$/, '');
+      return trimmed.endsWith('/api') ? trimmed.slice(0, -4) : trimmed;
+    }
+  }
+  // Meta tag opcional
   if (typeof document !== 'undefined') {
     const meta = document.querySelector('meta[name="api-base"]') as HTMLMetaElement | null;
     if (meta?.content) return meta.content.replace(/\/$/, '');
   }
   // Fallback a variable de entorno de ejecución (SSR) si se inyecta
-  const fromEnv = typeof process !== 'undefined' ? (process.env?.['API_BASE'] as unknown as string | undefined) : undefined;
-  if (fromEnv) return fromEnv.replace(/\/$/, '');
-  // Fallback final: dominio de API por defecto
-  return 'https://api.tsinit.com';
+  if (typeof process !== 'undefined') {
+    const apiBase = process.env?.['API_BASE'] as unknown as string | undefined;
+    if (apiBase) return apiBase.replace(/\/$/, '');
+    // Soporta API_URL (típico: https://api.dom.com/api) -> derivar base sin "/api"
+    const apiUrl = process.env?.['API_URL'] as unknown as string | undefined;
+    if (apiUrl) {
+      const trimmed = apiUrl.replace(/\/$/, '');
+      return trimmed.endsWith('/api') ? trimmed.slice(0, -4) : trimmed; // quita "/api" si está al final
+    }
+  }
+  // Fallback final: vacío -> mantiene URLs relativas (requiere proxy de /api y /uploads)
+  return '';
 }
 
 export const apiBaseInterceptor: HttpInterceptorFn = (req, next) => {
