@@ -4,6 +4,17 @@ import { HttpInterceptorFn } from '@angular/common/http';
 export function getApiBase(): string {
   // Modo navegador: permite configurar sin rebuild vía window.__env o meta
   if (typeof window !== 'undefined') {
+    // Si estamos en local (frontend e2e/serve), usa backend local por defecto
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      const anyWinLocal = window as unknown as { __env?: Record<string, string> };
+      const winApiLocal = anyWinLocal.__env?.['API_BASE'] || anyWinLocal.__env?.['API_URL'];
+      if (winApiLocal) {
+        const trimmed = winApiLocal.replace(/\/$/, '');
+        return trimmed.endsWith('/api') ? trimmed.slice(0, -4) : trimmed;
+      }
+      return 'http://localhost:3000';
+    }
     const anyWin = window as unknown as { __env?: Record<string, string> };
     const fromWindow = anyWin.__env?.['API_BASE'] || anyWin.__env?.['API_URL'];
     if (fromWindow) {
