@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { MenuService, MenuItem } from './menu.service';
 import { ThemeService } from './theme.service';
 import { SiteSettingsService } from './site-settings.service';
+import { buildAssetUrl } from './asset-url.util';
 
 @Component({
   selector: 'app-main-nav',
@@ -14,7 +15,7 @@ import { SiteSettingsService } from './site-settings.service';
       <div class="container mx-auto px-4 py-2 flex flex-wrap items-center gap-4">
         <a routerLink="/" class="font-semibold text-lg tracking-tight flex items-center gap-2" aria-label="Inicio">
           @if (theme.darkMode() ? (settings.settings()?.logoDark || settings.settings()?.logoLight) : (settings.settings()?.logoLight || settings.settings()?.logoDark)) {
-            <img [src]="theme.darkMode() ? (settings.settings()?.logoDark || settings.settings()?.logoLight)! : (settings.settings()?.logoLight || settings.settings()?.logoDark)!" alt="Logo" class="h-8 w-auto" />
+            <img [src]="logoSrc()" alt="Logo" class="h-8 w-auto" />
           } @else {
             {{ settings.settings()?.siteName || 'CMS' }}
           }
@@ -80,6 +81,12 @@ export class MainNavComponent implements OnInit {
   openSubmenu = signal<string | null>(null);
   theme = inject(ThemeService);
   settings = inject(SiteSettingsService);
+
+  logoSrc() {
+    const s = this.settings.settings();
+    const chosen = this.theme.darkMode() ? (s?.logoDark || s?.logoLight) : (s?.logoLight || s?.logoDark);
+    return buildAssetUrl(chosen) || undefined;
+  }
 
   ngOnInit() {
     this.menu.load();
