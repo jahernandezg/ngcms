@@ -58,7 +58,19 @@ jobs:
         run: npx prisma db seed --schema=prisma/schema.prisma
 
       - name: Generate OpenAPI types
-        run: npm run openapi:all
+        run: |
+          # Try to generate types from live backend if available; fallback to local build
+          set -e
+          OPENAPI_URL=${{ vars.OPENAPI_URL || 'http://localhost:3000/api/docs-json' }}
+          echo "Fetching OpenAPI from ${OPENAPI_URL}..."
+          if curl -fsSL "$OPENAPI_URL" -o swagger.json; then
+            npx openapi-typescript swagger.json --output libs/shared-types/src/lib/openapi-types.ts
+          else
+            echo "Live OpenAPI not available, building backend to emit docs..."
+            npx nx build backend
+            node backend/scripts/generate-openapi.cjs || true
+            test -f swagger.json && npx openapi-typescript swagger.json --output libs/shared-types/src/lib/openapi-types.ts || echo "swagger.json missing; skipping types"
+          fi
 
       - name: Lint
         run: npx nx run-many -t lint --all

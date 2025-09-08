@@ -30,9 +30,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
 
       - name: Build Angular frontend (static)
+        env:
+          # Provide API base at build time for SSR/server builds (interceptor still uses meta on client)
+          API_BASE: https://api.tsinit.com
         run: |
           npm run build:frontend
           test -d dist/frontend/browser
