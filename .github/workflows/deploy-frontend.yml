@@ -70,9 +70,12 @@ jobs:
           local-dir: dist/frontend/browser/
           log-level: standard
           dry-run: false
-          # If your hosting requires deleting files not present in the build, set to true
-          # Be careful: this will remove files not present in the build folder
-          dangerous-clean-slate: false
+          # Limpiar la carpeta remota antes de subir (elimina archivos que no existan en el build)
+          # PRESERVANDO env.js (si existe en el hosting)
+          dangerous-clean-slate: true
+          exclude: |
+            env.js
+            **/env.js
 
       # Alternative SFTP deploy (commented). Uncomment and remove the FTP step above if using SFTP.
       # - name: Deploy via SFTP
