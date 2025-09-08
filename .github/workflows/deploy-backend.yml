@@ -29,6 +29,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      DOCKER_BUILDKIT: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -65,14 +67,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure deploy path exists
+      - name: Ensure deploy path exists and connectivity
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
           script_stop: true
           script: |
+            set -e
+            echo "$(uname -a)"
             mkdir -p "${{ secrets.DEPLOY_PATH }}"
 
       - name: Copy compose to server
@@ -81,6 +86,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
           source: |
             docker-compose.deploy.yml
           target: ${{ secrets.DEPLOY_PATH }}
@@ -91,38 +97,48 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
           script_stop: true
           envs: GHCR_PAT,GITHUB_ACTOR
           script: |
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
+
+            # Normalizar CRLF en archivos .env si llegaron desde Windows
+            if [ -f .env ]; then sed -i 's/\r$//' .env; fi
+
+            # Detectar docker compose v1/v2
+            if command -v docker-compose >/dev/null 2>&1; then DC="docker-compose"; else DC="docker compose"; fi
+
             # Docker login en GHCR para pulls privados
+            if [ -z "${GHCR_PAT}" ]; then echo "GHCR_PAT no definido" >&2; exit 1; fi
             echo "${GHCR_PAT}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+
             # Archivo .env.deploy con la imagen de backend
             echo BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }} > .env.deploy
 
             # Pull de servicios necesarios
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml pull db backend || true
+            $DC --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml pull db backend || true
 
             # DB primero
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml up -d db
+            $DC --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml up -d db
             echo "Esperando DB saludable..."
             for i in $(seq 1 60); do
-              if docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml exec -T db pg_isready -U ${POSTGRES_USER:-postgres} ; then
+              if $DC --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml exec -T db pg_isready -U ${POSTGRES_USER:-postgres} ; then
                 echo "DB lista"; break; fi; sleep 2; done
 
             # Migraciones y seed opcional
             echo "Prisma migrate deploy..."
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
+            $DC --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
             echo "Verificando necesidad de seed..."
-            NEED_SEED=$(docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml exec -T db psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms} -tAc "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='User') THEN (SELECT CASE WHEN (SELECT COUNT(*) FROM \"User\")=0 THEN 'yes' ELSE 'no' END) ELSE 'yes' END;")
+            NEED_SEED=$($DC --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml exec -T db psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms} -tAc "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='User') THEN (SELECT CASE WHEN (SELECT COUNT(*) FROM \"User\")=0 THEN 'yes' ELSE 'no' END) ELSE 'yes' END;")
             if [ "$NEED_SEED" = "yes" ]; then
               echo "Prisma db seed..."
-              docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma
+              $DC --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma
             else
               echo "Seed no necesario."
             fi
 
             # Levantar/actualizar backend solamente
-            docker compose --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml up -d db backend
+            BACKEND_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}" $DC --env-file .env --env-file .env.deploy -f docker-compose.deploy.yml up -d db backend
             docker image prune -f || true

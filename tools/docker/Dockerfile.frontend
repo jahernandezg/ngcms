@@ -1,5 +1,6 @@
 FROM node:20.19.0-alpine AS builder
 WORKDIR /workspace
+COPY prisma ./prisma
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
