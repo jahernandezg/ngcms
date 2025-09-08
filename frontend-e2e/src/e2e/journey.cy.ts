@@ -6,7 +6,8 @@ describe('journey home -> post -> back', () => {
     cy.visit('/?view=blog');
 
     // Consultar si hay posts publicados vía API
-    cy.request({ url: '/api/posts?limit=1', failOnStatusCode: false }).then((resp) => {
+    const api = (Cypress.env('API_URL') as string) || `${Cypress.config().baseUrl?.replace(/\/$/, '')}/api`;
+    cy.request({ url: `${api.replace(/\/$/,'')}/posts?limit=1`, failOnStatusCode: false }).then((resp) => {
       const ok = resp.status >= 200 && resp.status < 300;
       const hasPosts = ok && Array.isArray(resp.body?.data) && resp.body.data.length > 0;
       if (!ok) {
