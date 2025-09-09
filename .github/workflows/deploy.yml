@@ -115,11 +115,27 @@ jobs:
             echo "Prisma migrate deploy..."
             BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
 
-            echo "Verificando necesidad de seed..."
-            NEED_SEED=$($DC -f docker-compose.deploy.yml exec -T db psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms} -tAc "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='User') THEN (SELECT CASE WHEN (SELECT COUNT(*) FROM \"User\")=0 THEN 'yes' ELSE 'no' END) ELSE 'yes' END;")
+            echo "Verificando necesidad de seed (Prisma)..."
+            NEED_SEED=$($DC -f docker-compose.deploy.yml run --rm -e NODE_ENV=production backend node -e '
+              const { PrismaClient } = require("@prisma/client");
+              const p = new PrismaClient();
+              (async () => {
+                try {
+                  let need = "yes";
+                  // Intentar contar usuarios; si existe tabla y count > 0 => no
+                  const count = await p.user.count().catch(() => -1);
+                  if (count > 0) need = "no"; // ya hay registros
+                  else if (count === 0) need = "yes"; // tabla existe y vacía
+                  // si count -1 (tabla no existe aún), seed = yes
+                  process.stdout.write(need);
+                } catch(e) { process.stdout.write("yes"); }
+                finally { await p.$disconnect(); }
+              })();
+            ' 2>/dev/null || echo yes)
+            echo "NEED_SEED=$NEED_SEED"
             if [ "$NEED_SEED" = "yes" ]; then
               echo "Prisma db seed..."
-              BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma
+              BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma || { echo "Seed falló" >&2; exit 1; }
             else
               echo "Seed no necesario."
             fi
