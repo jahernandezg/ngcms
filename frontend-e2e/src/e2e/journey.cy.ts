@@ -6,10 +6,13 @@ describe('journey home -> post -> back', () => {
     cy.visit('/?view=blog');
 
     // Consultar si hay posts publicados vía API
-    const api = (Cypress.env('API_URL') as string) || `${Cypress.config().baseUrl?.replace(/\/$/, '')}/api`;
+  let api = (Cypress.env('API_URL') as string) || `${Cypress.config().baseUrl?.replace(/\/$/, '')}/api`;
+  // Normalizar 'localhost' -> '127.0.0.1' para evitar resolución IPv6 (::1) en CI
+  api = api.replace('localhost', '127.0.0.1');
+  cy.log(`API_URL efectivo: ${api}`);
   const fetchPosts = (attempt = 1) => {
       cy.log(`Intento fetch posts (${attempt})`);
-      return cy.request({ url: `${api.replace(/\/$/,'')}/posts?limit=1`, failOnStatusCode: false })
+  return cy.request({ url: `${api.replace(/\/$/,'')}/posts?limit=1`, failOnStatusCode: false })
         .then((resp) => {
           // Si conexión rechazada (status 0) y aún quedan reintentos, esperar y reintentar
           if ((resp.status === 0 || resp.status === 503) && attempt < 4) {

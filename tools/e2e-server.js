@@ -59,7 +59,9 @@ async function waitForHealth(baseUrl, timeoutMs = 60000) {
 async function ensureBackend() {
   const backendPort = 3000;
   // Forzar IPv4 explícito para evitar que "localhost" resuelva a ::1 en algunos entornos CI
-  const apiBase = process.env.API_URL || 'http://127.0.0.1:3000/api';
+  let apiBase = process.env.API_URL || 'http://127.0.0.1:3000/api';
+  // Normalizar cualquier 'localhost' a 127.0.0.1 para evitar resolución a ::1 en runners CI
+  apiBase = apiBase.replace('localhost', '127.0.0.1');
   let backendProcess;
 
   const portOpen = await checkPort(backendPort);
@@ -100,7 +102,7 @@ async function main() {
     frontend = spawn('npx', ['nx', 'serve', 'frontend', '--port=4300', '--verbose'], {
       stdio: 'inherit',
       shell: true,
-  env: { ...process.env, API_URL: process.env.API_URL || 'http://127.0.0.1:3000/api' },
+  env: { ...process.env, API_URL: (process.env.API_URL || 'http://127.0.0.1:3000/api').replace('localhost','127.0.0.1') },
     });
   } else {
     console.warn('[e2e] Frontend already running on port 4300.');
