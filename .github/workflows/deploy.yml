@@ -53,6 +53,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Preflight remoto (docker + permisos)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            echo "Usuario: $(whoami)"
+            echo "Hostname: $(hostname)"
+            command -v docker >/dev/null 2>&1 || { echo 'docker no instalado en el VPS'; exit 1; }
+            docker version --format '{{.Server.Version}}' || true
+            echo "Espacio en disco:"; df -h . | awk 'NR==1 || NR==2'
+            mkdir -p "${{ secrets.DEPLOY_PATH }}" || { echo 'No se pudo crear DEPLOY_PATH'; exit 1; }
+            echo "Preflight OK"
+
       - name: Copy compose to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -72,7 +89,7 @@ jobs:
           script_stop: true
           envs: GITHUB_ACTOR,GHCR_PAT,GHCR_USER
           script: |
-            set -e
+            set -euo pipefail
             cd ${{ secrets.DEPLOY_PATH }}
 
             # Login GHCR para pulls privados (no interactivo)
@@ -110,3 +127,4 @@ jobs:
             # Levantar backend
             BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml up -d db backend
             docker image prune -f || true
+            docker ps --format 'table {{.Names}}\t{{.Status}}' || true
