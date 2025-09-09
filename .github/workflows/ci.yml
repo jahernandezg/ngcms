@@ -76,6 +76,8 @@ jobs:
         run: npx nx e2e backend-e2e --ci --runInBand
 
       - name: Frontend E2E (smoke)
+        env:
+          API_URL: http://localhost:3000/api
         run: npx nx e2e frontend-e2e --ci
 
       - name: Archive dist

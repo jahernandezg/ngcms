@@ -18,6 +18,8 @@ export default defineConfig({
     env: {
       ADMIN_EMAIL: process.env["ADMIN_EMAIL"],
       ADMIN_PASSWORD: process.env["ADMIN_PASSWORD"],
+  // Forzar IPv4 para evitar resolución a ::1 en CI que causa ECONNREFUSED
+  API_URL: process.env["API_URL"] || 'http://127.0.0.1:3000/api',
     },
   },
 });

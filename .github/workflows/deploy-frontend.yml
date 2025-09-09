@@ -58,6 +58,23 @@ jobs:
           ls -la dist/frontend || true
           test -d dist/frontend/browser
 
+      - name: Check env.js presence on FTP server (informational)
+        run: |
+          set -e
+          SERVER="${{ secrets.FTP_HOST }}"
+          USER="${{ secrets.FTP_USERNAME }}"
+          PASS="${{ secrets.FTP_PASSWORD }}"
+          DIR="${{ secrets.FTP_REMOTE_DIR }}"
+          echo "Listing ${DIR} on ${SERVER} via FTP (to check env.js)"
+          # Try to list directory (may vary by server); ignore errors but print output if any
+          OUT=$(curl -s --list-only --disable-epsv --ftp-method nocwd -u "$USER:$PASS" "ftp://${SERVER}${DIR}" || true)
+          echo "$OUT"
+          if echo "$OUT" | grep -qE "(^|/)env\.js$|(^| )env\.js$|^env\.js$"; then
+            echo "env.js found. It will be preserved by deploy."
+          else
+            echo "env.js not found in ${DIR}. If you need runtime config, upload env.js (see frontend/public/env.example.js)."
+          fi
+
       - name: Deploy via FTP/FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -70,9 +87,12 @@ jobs:
           local-dir: dist/frontend/browser/
           log-level: standard
           dry-run: false
-          # If your hosting requires deleting files not present in the build, set to true
-          # Be careful: this will remove files not present in the build folder
-          dangerous-clean-slate: false
+          # Limpiar la carpeta remota antes de subir (elimina archivos que no existan en el build)
+          # PRESERVANDO env.js (si existe en el hosting)
+          dangerous-clean-slate: true
+          exclude: |
+            env.js
+            **/env.js
 
       # Alternative SFTP deploy (commented). Uncomment and remove the FTP step above if using SFTP.
       # - name: Deploy via SFTP

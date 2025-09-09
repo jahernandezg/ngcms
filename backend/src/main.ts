@@ -167,7 +167,9 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || 3000;
-  await app.listen(port, '0.0.0.0');
+  // Si estamos en entorno e2e (bandera E2E=1) forzar bind a 127.0.0.1 para evitar resolución a ::1
+  const host = process.env.E2E === '1' ? '127.0.0.1' : (process.env.BIND_HOST || '0.0.0.0');
+  await app.listen(port, host);
   const appUrl = await app.getUrl();
   appLogger.info({ msg: 'app_started', url: `${appUrl}/${globalPrefix}` });
   setInterval(() => appLogger.info({ msg: 'keep_alive' }), 30000).unref();
