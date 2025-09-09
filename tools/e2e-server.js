@@ -3,11 +3,12 @@ const { spawn } = require('child_process');
 const net = require('net');
 
 function checkPort(port, host = '127.0.0.1', timeoutMs = 500) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const socket = net.createConnection(port, host);
     let done = false;
     const finish = (result) => {
-      if (done) return; done = true; socket.destroy(); resolve(result);
+      if (done) return; done = true; try { socket.destroy(); } catch {}
+      resolve(result);
     };
     socket.once('connect', () => finish(true));
     socket.once('error', () => finish(false));
@@ -30,7 +31,7 @@ function waitForPort(port, timeoutMs) {
 }
 
 async function main() {
-  // If backend isn't already running, start it. Do NOT touch/migrate the DB here.
+  // Start backend on 3000 if not running already
   const backendPort = 3000;
   let backend;
   if (!(await checkPort(backendPort))) {
@@ -53,12 +54,12 @@ async function main() {
     });
   } else {
     console.warn('[e2e] Frontend already running on port 4300.');
-  // Esperar a que el frontend esté escuchando también (Vite/Nx tarda un poco)
-  await waitForPort(frontendPort, 90000);
   }
+  // Ensure frontend is listening before Cypress starts
+  await waitForPort(frontendPort, 90000);
 
-  if (backend) backend.on('exit', code => process.exit(code || 1));
-  if (frontend) frontend.on('exit', code => process.exit(code || 1));
+  if (backend) backend.on('exit', (code) => process.exit(code || 1));
+  if (frontend) frontend.on('exit', (code) => process.exit(code || 1));
 }
 
-main().catch(err => { console.error(err); process.exit(1); });
+main().catch((err) => { console.error(err); process.exit(1); });
