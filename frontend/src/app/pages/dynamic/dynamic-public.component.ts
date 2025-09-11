@@ -1,6 +1,6 @@
 
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
@@ -11,6 +11,7 @@ import { SeoService } from '../../shared/seo.service';
 import { unwrapData } from '../../shared/http-utils';
 import { PostDetailComponent } from '../post-detail/post-detail.component';
 import { ThemeService } from '../../shared/theme.service';
+import { observeDynamicContainer } from '../../shared/twind-runtime';
 
 type ResolvedTypes = 'homepage' | 'page' | 'blog' | 'category' | 'post' | 'not_found';
 interface PagePayload { id: string; title: string; content?: string; excerpt?: string; slug?: string; }
@@ -37,7 +38,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
     <p class="p-4">Cargando…</p>
   </ng-template>
   @if (!loading()) {
-  <section class="container-fluid">
+  <section class="container-fluid" #dynRoot>
     @switch (type()) {
     @case ('homepage') {
   <article class="prose" [innerHTML]="safeContent()"></article>
@@ -126,7 +127,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
   } @else { <ng-container [ngTemplateOutlet]="loadingTpl"></ng-container> }
   `
 })
-export class DynamicPublicComponent {
+export class DynamicPublicComponent implements AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
   private seo = inject(SeoService);
@@ -145,6 +146,8 @@ export class DynamicPublicComponent {
   readonly loadingMore = signal<boolean>(false);
   readonly safeContent = signal<SafeHtml | undefined>(undefined);
   readonly theme = inject(ThemeService);
+  @ViewChild('dynRoot', { static: false }) dynRoot?: ElementRef<HTMLElement>;
+  private disconnectTwind: (() => void) | null = null;
 
   constructor() {
     this.route.url.pipe(
@@ -162,6 +165,9 @@ export class DynamicPublicComponent {
   const payload: AnyPayload = res.data.payload;
   const html = (payload && typeof payload === 'object') ? (payload as Record<string, unknown>)['content'] : undefined;
   if (typeof html === 'string') this.safeContent.set(this.sanitizer.bypassSecurityTrustHtml(html));
+
+          // Reaplicar Twind después de actualizar el HTML dinámico
+          queueMicrotask(() => { try { this.initTwind?.(); } catch {} });
 
         setTimeout(() => {
             console.log('Tailwind styles refreshed antes...');
@@ -260,6 +266,14 @@ export class DynamicPublicComponent {
     return ['/', post.slug];
   }
   // Fallback de excerpt: si no hay excerpt, generar desde el contenido (limpio y truncado)
+  async ngAfterViewInit() { await this.initTwind(); }
+  ngOnDestroy() { if (this.disconnectTwind) { try { this.disconnectTwind(); } catch {} this.disconnectTwind = null; } }
+  private async initTwind() {
+    const container = this.dynRoot?.nativeElement || document.body;
+    if (this.disconnectTwind) { try { this.disconnectTwind(); } catch {} this.disconnectTwind = null; }
+    this.disconnectTwind = await observeDynamicContainer(container);
+  }
+
   getExcerpt(post: { excerpt?: string | null; content?: string | null }): string {
     if (post.excerpt && post.excerpt.trim()) return post.excerpt;
     if (post.content) {
