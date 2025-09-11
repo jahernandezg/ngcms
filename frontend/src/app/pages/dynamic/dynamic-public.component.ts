@@ -11,7 +11,7 @@ import { SeoService } from '../../shared/seo.service';
 import { unwrapData } from '../../shared/http-utils';
 import { PostDetailComponent } from '../post-detail/post-detail.component';
 import { ThemeService } from '../../shared/theme.service';
-import { observeDynamicContainer } from '../../shared/twind-runtime';
+import { applyTwindToContainer } from '../../shared/twind-runtime';
 
 type ResolvedTypes = 'homepage' | 'page' | 'blog' | 'category' | 'post' | 'not_found';
 interface PagePayload { id: string; title: string; content?: string; excerpt?: string; slug?: string; }
@@ -147,7 +147,6 @@ export class DynamicPublicComponent implements AfterViewInit, OnDestroy {
   readonly safeContent = signal<SafeHtml | undefined>(undefined);
   readonly theme = inject(ThemeService);
   @ViewChild('dynRoot', { static: false }) dynRoot?: ElementRef<HTMLElement>;
-  private disconnectTwind: (() => void) | null = null;
 
   constructor() {
     this.route.url.pipe(
@@ -166,8 +165,8 @@ export class DynamicPublicComponent implements AfterViewInit, OnDestroy {
   const html = (payload && typeof payload === 'object') ? (payload as Record<string, unknown>)['content'] : undefined;
   if (typeof html === 'string') this.safeContent.set(this.sanitizer.bypassSecurityTrustHtml(html));
 
-          // Reaplicar Twind después de actualizar el HTML dinámico
-          queueMicrotask(() => { try { this.initTwind?.(); } catch {} });
+          // Aplicar Twind a clases dentro del contenedor dinámico después de inyectar HTML
+          queueMicrotask(async () => { try { await this.applyTwindNow(); } catch {} });
 
         setTimeout(() => {
             console.log('Tailwind styles refreshed antes...');
@@ -266,12 +265,10 @@ export class DynamicPublicComponent implements AfterViewInit, OnDestroy {
     return ['/', post.slug];
   }
   // Fallback de excerpt: si no hay excerpt, generar desde el contenido (limpio y truncado)
-  async ngAfterViewInit() { await this.initTwind(); }
-  ngOnDestroy() { if (this.disconnectTwind) { try { this.disconnectTwind(); } catch {} this.disconnectTwind = null; } }
-  private async initTwind() {
+  async ngAfterViewInit() { await this.applyTwindNow(); }
+  private async applyTwindNow() {
     const container = this.dynRoot?.nativeElement || document.body;
-    if (this.disconnectTwind) { try { this.disconnectTwind(); } catch {} this.disconnectTwind = null; }
-    this.disconnectTwind = await observeDynamicContainer(container);
+    await applyTwindToContainer(container);
   }
 
   getExcerpt(post: { excerpt?: string | null; content?: string | null }): string {
