@@ -6,7 +6,7 @@ export const appRoutes: Route[] = [
 	{ path: 'admin', loadChildren: () => import('./admin/admin.routes').then(m => m.ADMIN_ROUTES) },
 		{
 			path: '',
-			loadComponent: () => import('./layout/site-layout.component').then(m => m.SiteLayoutComponent),
+			loadComponent: () => import('./layout/site-layout/site-layout.component').then(m => m.SiteLayoutComponent),
 			children: [
 			{ path: '', component: HomeComponent },
 			// Wildcard público al final dentro del layout

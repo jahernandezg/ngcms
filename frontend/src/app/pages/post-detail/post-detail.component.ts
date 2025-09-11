@@ -1,5 +1,6 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, inject, effect, Input, signal, DestroyRef } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -40,7 +41,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[] }
           <span class="text-xs px-2 py-1 bg-gray-50 rounded">{{ t.name }}</span>
         }
       </div>
-      <article class="prose mt-4" [innerHTML]="post()?.content"></article>
+  <article class="prose mt-4" [innerHTML]="safeContent()"></article>
       @if (related()?.length) {
         <section class="mt-10">
           <h3 class="text-xl font-semibold mb-2">Relacionados</h3>
@@ -70,6 +71,7 @@ export class PostDetailComponent {
   private http = inject(HttpClient);
   private seo = inject(SeoService);
   private destroyRef = inject(DestroyRef);
+  private sanitizer = inject(DomSanitizer);
 
   private _slugInput?: string;
   @Input() set slug(value: string | undefined) {
@@ -81,6 +83,7 @@ export class PostDetailComponent {
   get slug(): string | undefined { return this._slugInput; }
   private readonly slugSignal = signal<string>('');
   readonly post = signal<PostDetail | undefined>(undefined);
+  readonly safeContent = signal<SafeHtml | undefined>(undefined);
   readonly related = signal<PostDetail[] | undefined>(undefined);
   readonly loading = signal<boolean>(true);
 
@@ -141,6 +144,7 @@ export class PostDetailComponent {
           };
           data.content = decodeIfNeeded(data.content);
           this.post.set(data as PostDetail);
+          this.safeContent.set(this.sanitizer.bypassSecurityTrustHtml(data.content));
         }
         this.loading.set(false);
       },

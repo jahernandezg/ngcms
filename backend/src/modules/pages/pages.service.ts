@@ -14,13 +14,25 @@ export class PagesService {
     return sanitizeHtml(html, {
       allowedTags: Array.from(new Set([
         ...sanitizeHtml.defaults.allowedTags,
-        'img','h1','h2','h3','h4','h5','h6','pre','code','blockquote'
+  'img','h1','h2','h3','h4','h5','h6','pre','code','blockquote',
+  // Formularios y controles de formulario
+  'form','input','button','select','option','textarea','label','fieldset','legend'
       ])),
       allowedAttributes: {
         ...sanitizeHtml.defaults.allowedAttributes,
-        a: ['href','name','target','rel'],
-        img: ['src','alt'],
-        '*': ['class']
+  a: ['href','name','target','rel'],
+  img: ['src','alt'],
+  // Atributos para formularios y controles
+  form: ['id','name','novalidate'],
+  input: ['type','name','value','placeholder','checked','disabled','required','min','max','step','pattern','multiple','size','maxlength','minlength','readonly','autocomplete','id'],
+  button: ['type','name','value','disabled','id'],
+  select: ['name','multiple','disabled','required','id'],
+  option: ['value','label','selected','disabled'],
+  textarea: ['name','rows','cols','placeholder','maxlength','minlength','readonly','disabled','required','id','wrap'],
+  label: ['for','id'],
+  fieldset: ['disabled','name','id'],
+  // Comunes en todos
+  '*': ['class','id','data-*','aria-*']
       },
       allowedSchemes: ['http','https','mailto','data']
     });

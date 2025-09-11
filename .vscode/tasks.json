@@ -19,6 +19,12 @@
 				"$tsc"
 			],
 			"group": "build"
+		},
+		{
+			"label": "nx: build backend",
+			"type": "shell",
+			"command": "npx nx run backend:build",
+			"group": "build"
 		}
 	]
 }

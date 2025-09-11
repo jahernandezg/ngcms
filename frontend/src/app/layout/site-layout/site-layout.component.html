@@ -1,0 +1,93 @@
+<div #shell data-theme-scope class="site-shell min-h-screen" [class.dark]="theme.darkMode()">
+
+    <!---ESTO ES CUSTOM-->
+
+
+    <main class="bg-[var(--theme-surface)] text-[var(--theme-text)] font-mono antialiased transition-colors duration-300">
+
+       <app-main-nav />
+     <router-outlet />
+
+     <!-- Footer -->
+
+
+  </main>
+
+    <footer class="bg-[var(--theme-surface)] border-t [border-color:var(--theme-border)] py-16 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center space-x-3 mb-4">
+
+                        <h3 class="text-xl font-bold text-[var(--theme-text)]">
+
+                            @if (theme.darkMode() ? (settings.settings()?.logoDark || settings.settings()?.logoLight) :
+                            (settings.settings()?.logoLight || settings.settings()?.logoDark)) {
+                            <img [src]="logoSrc()" alt="Logo" class="h-8 w-auto" />
+                            } @else {
+                            {{ settings.settings()?.siteName || 'CMS' }}
+                            }
+                          </h3>
+                    </div>
+                    <p class="text-[var(--theme-text-secondary)] max-w-md mb-6 transition-colors duration-300">
+                         {{ settings.settings()?.description || '' }}
+                    </p>
+
+                    <!-- Social Links -->
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-[var(--theme-surface-alt)] hover:bg-[var(--theme-surface)] border [border-color:var(--theme-border)] rounded-lg flex items-center justify-center transition-colors">
+                            <span class="text-[var(--theme-text-secondary)]">📧</span>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-[var(--theme-surface-alt)] hover:bg-[var(--theme-surface)] border [border-color:var(--theme-border)] rounded-lg flex items-center justify-center transition-colors">
+                            <span class="text-[var(--theme-text-secondary)]">🐦</span>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-[var(--theme-surface-alt)] hover:bg-[var(--theme-surface)] border [border-color:var(--theme-border)] rounded-lg flex items-center justify-center transition-colors">
+                            <span class="text-[var(--theme-text-secondary)]">💼</span>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-[var(--theme-surface-alt)] hover:bg-[var(--theme-surface)] border [border-color:var(--theme-border)] rounded-lg flex items-center justify-center transition-colors">
+                            <span class="text-[var(--theme-text-secondary)]">🐱</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-semibold text-[var(--theme-text)] mb-4">Contenido</h4>
+                    <ul class="space-y-2 text-[var(--theme-text-secondary)]">
+                        <li><a href="#" class="transition-colors hover:text-[var(--theme-text)]">Tutoriales Angular</a></li>
+                        <li><a href="#" class="transition-colors hover:text-[var(--theme-text)]">APIs con NestJS</a></li>
+                        <li><a href="#" class="transition-colors hover:text-[var(--theme-text)]">Guías Vite</a></li>
+                        <li><a href="#" class="transition-colors hover:text-[var(--theme-text)]">AI Coding</a></li>
+                        <li><a href="#" class="transition-colors hover:text-[var(--theme-text)]">Proyectos</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-semibold text-[var(--theme-text)] mb-4">Recursos</h4>
+                    <ul class="space-y-2 text-[var(--theme-text-secondary)]">
+                        <li><a href="#" class="transition-colors hover:text-[var(--theme-text)]">Código GitHub</a></li>
+                        <li><a href="#" class="transition-colors hover:text-[var(--theme-text)]">Templates</a></li>
+                        <li><a href="#" class="transition-colors hover:text-[var(--theme-text)]">Herramientas</a></li>
+                        <li><a href="#" class="transition-colors hover:text-[var(--theme-text)]">Cheatsheets</a></li>
+                        <li><a href="#" class="transition-colors hover:text-[var(--theme-text)]">Newsletter</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t [border-color:var(--theme-border)] mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-[var(--theme-text-secondary)] text-center md:text-left">
+                    &copy; {{ year }} {{ settings.settings()?.siteName || 'CMS' }}. All rights reserved.
+                </p>
+                <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                    <span class="text-[var(--theme-text-secondary)] text-sm">Construido con:</span>
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 px-2 py-1 rounded text-xs">Angular 20</span>
+                        <span class="bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded text-xs">Nestjs 20</span>
+                        <span class="bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 px-2 py-1 rounded text-xs">Tailwind</span>
+                        <span class="bg-teal-600 dark:bg-teal-500/20 text-white dark:text-white px-2 py-1 rounded text-xs">Monorepo Nx</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+  </div>

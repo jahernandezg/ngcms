@@ -1,0 +1,227 @@
+<!--Definitivo con dropdown-->
+<nav class="fixed top-0 w-full z-50 backdrop-blur-md border-b [border-color:var(--theme-border)] bg-[color:color-mix(in_oklab,var(--theme-surface)_80%,transparent)] transition-colors duration-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+      <!-- Logo -->
+      <div class="flex-shrink-0">
+  <a routerLink="/" class="text-2xl font-bold text-[var(--theme-text)] tracking-tight flex items-center gap-2"
+          aria-label="Inicio">
+          @if (theme.darkMode() ? (settings.settings()?.logoDark || settings.settings()?.logoLight) :
+          (settings.settings()?.logoLight || settings.settings()?.logoDark)) {
+          <img [src]="logoSrc()" alt="Logo" class="h-8 w-auto" />
+          } @else {
+          {{ settings.settings()?.siteName || 'CMS' }}
+          }
+        </a>
+      </div>
+
+      <!-- Desktop Navigation Links -->
+      <div class="hidden md:flex space-x-8">
+
+
+        @if (items().length) {
+
+          @for (item of items(); let i = $index; track item.id) {
+
+            @if (item.children?.length) {
+              <!-- Specifications Dropdown -->
+              <div class="relative group">
+
+                 @if (isInternal(item)) {
+
+                <a [routerLink]="linkFor(item)" [queryParams]="queryParamsFor(item)"
+                  class="text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)] transition-colors flex items-center space-x-1 py-2" role="menuitem"
+                  [attr.aria-haspopup]="item.children?.length ? 'true': null"
+                  [attr.aria-expanded]="item.children?.length ? (openSubmenu() === item.id) : null"
+                  (click)="onParentClick($event, item)" (keydown)="onParentKeydown($event, item)"
+                  [attr.target]="item.openNewWindow? '_blank': null">
+
+                   <span>{{item.title}}</span>
+                  <svg class="w-4 h-4 transform group-hover:rotate-180 transition-transform duration-200" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </a>
+
+                }@else {
+
+                  <a [href]="item.url"
+                  class="text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)] transition-colors flex items-center space-x-1 py-2" role="menuitem"
+                  [attr.aria-haspopup]="item.children?.length ? 'true': null"
+                  [attr.aria-expanded]="item.children?.length ? (openSubmenu() === item.id) : null"
+                  (click)="onParentClick($event, item)" (keydown)="onParentKeydown($event, item)"
+                  [attr.target]="item.openNewWindow? '_blank': null" rel="noopener noreferrer">
+
+                   <span>{{item.title}}</span>
+                  <svg class="w-4 h-4 transform group-hover:rotate-180 transition-transform duration-200" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </a>
+                }
+
+                <!-- Dropdown Menu -->
+                <div class="absolute top-full left-0 mt-2 w-72 backdrop-blur-md border [border-color:var(--theme-border)] rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 bg-[color:color-mix(in_oklab,var(--theme-surface)_95%,transparent)]">
+                  <div class="p-2">
+                    @for (c of item.children; let ci = $index; track c.id) {
+                    @if (isInternal(c)) {
+                    <a [routerLink]="linkFor(c)" [queryParams]="queryParamsFor(c)"
+                      class="flex items-center p-3 rounded-xl transition-colors hover:bg-[var(--theme-surface-alt)] text-[var(--theme-text)]">
+                      {{ c.title }}
+                    </a>
+                    } @else {
+                      <a [href]="c.url"
+                        class="flex items-center p-3 rounded-xl transition-colors hover:bg-[var(--theme-surface-alt)] text-[var(--theme-text)]"
+                        [attr.target]="c.openNewWindow? '_blank': null" rel="noopener noreferrer">
+                        {{ c.title }}
+                      </a>
+                      }
+                    }
+
+                  </div>
+                </div>
+              </div>
+            } @else {
+                @if (isInternal(item)) {
+
+                <a [routerLink]="linkFor(item)" [queryParams]="queryParamsFor(item)"
+                  class="text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)] transition-colors flex items-center space-x-1 py-2" role="menuitem"
+                  [attr.aria-haspopup]="item.children?.length ? 'true': null"
+                  [attr.aria-expanded]="item.children?.length ? (openSubmenu() === item.id) : null"
+                  (click)="onParentClick($event, item)" (keydown)="onParentKeydown($event, item)"
+                  [attr.target]="item.openNewWindow? '_blank': null">{{ item.title }}</a>
+
+                }@else {
+                <a [href]="item.url" class="text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)] transition-colors flex items-center space-x-1 py-2" role="menuitem"
+                  [attr.target]="item.openNewWindow? '_blank': null" rel="noopener noreferrer">{{ item.title }}</a>
+                }
+            }
+          }
+        }@else {
+        <span class="flex items-center p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Cargando menú…</span>
+        }
+
+      </div>
+
+      <button id="theme-toggle" (click)="toggleDark()" [attr.aria-pressed]="theme.darkMode()"
+  class="w-10 h-10 rounded-xl border [border-color:var(--theme-border)] flex items-center justify-center transition-all duration-300 bg-[var(--theme-surface-alt)] hover:bg-[var(--theme-surface)]">
+
+          @if (!theme.darkMode()) {
+             <!-- Sun icon -->
+            <svg id="theme-toggle-light-icon" class="w-5 h-5 stroke-yellow-600 text-yellow-100 dark:text-gray-400 block dark:hidden"
+            fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+              clip-rule="evenodd"></path>
+          </svg>
+          }@else {
+             <!-- Moon icon -->
+            <svg id="theme-toggle-dark-icon" class="w-5 h-5 stroke-blue-500 text-blue-100 dark:text-gray-400  dark:block"
+              fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+          }
+
+
+      </button>
+
+      <!-- Desktop CTA Button
+      <div class="hidden md:block">
+        <button
+          class="bg-gray-900 text-white px-6 py-2 rounded-full hover:bg-gray-800 transition-all duration-300 flex items-center space-x-2">
+          <span>Buy now</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>-->
+
+      <!-- Mobile menu button -->
+      <div class="md:hidden">
+  <button (click)="toggleMobileMenu()" class="text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)] focus:outline-none">
+          <svg id="hamburger-icon" [ngClass]="{'hidden': isMenuOpen, '': !isMenuOpen}" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+          <svg [ngClass]="{'hidden': !isMenuOpen, '': isMenuOpen}" id="close-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Mobile Navigation Menu -->
+  <div id="mobile-menu"
+    [ngClass]="{'translate-y-0 opacity-100 visible': isMenuOpen, '-translate-y-full opacity-0 invisible': !isMenuOpen}"
+  class="md:hidden absolute top-full left-0 w-full backdrop-blur-md border-b [border-color:var(--theme-border)] shadow-lg bg-[color:color-mix(in_oklab,var(--theme-surface)_95%,transparent)] text-[var(--theme-text)] transform -translate-y-full opacity-0 invisible transition-all duration-300">
+    <div class="px-4 py-6 space-y-4">
+
+      @if (items().length) {
+
+          @for (item of items(); let i = $index; track item.id) {
+
+            @if (item.children?.length) {
+
+               <!-- Mobile About Section -->
+                <div class="space-y-2">
+                  <button (click)="toggleMobileSubmenu(item)"
+                    class="mobile-dropdown-trigger flex items-center justify-between w-full text-left font-medium text-[var(--theme-text)]"
+                    data-target="mobile-about">
+                    <span>{{item.title}}</span>
+                    <svg [ngClass]="{'rotate-180': item.isOpen, '': item.isOpen}"
+                    class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </button>
+
+                  <div [ngClass]="{'hidden': !item.isOpen, '': item.isOpen}"
+                  class="mobile-dropdown-content pl-4 space-y-2 border-l-2 [border-color:var(--theme-border)]">
+
+                     @if (isInternal(item)) {
+                      <a [routerLink]="linkFor(item)" [queryParams]="queryParamsFor(item)"
+                      class="block py-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)]">{{item.title}}</a>
+                     } @else {
+                      <a [href]="item.url"
+                      class="block py-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)]"
+                      [attr.target]="item.openNewWindow? '_blank': null" rel="noopener noreferrer">{{item.title}}</a>
+                     }
+
+                     @for (c of item.children; let ci = $index; track c.id) {
+                        @if (isInternal(c)) {
+                        <a [routerLink]="linkFor(c)" [queryParams]="queryParamsFor(c)"
+                          class="block py-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)]">
+                          {{ c.title }}
+                        </a>
+                      } @else {
+                        <a [href]="c.url"
+                        class="block py-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)]"
+                        [attr.target]="c.openNewWindow? '_blank': null" rel="noopener noreferrer">{{c.title}}</a>
+                      }
+                    }
+                  </div>
+                </div>
+
+            }@else {
+
+              @if (isInternal(item)) {
+                <a [routerLink]="linkFor(item)" [queryParams]="queryParamsFor(item)"
+                  class="block py-3 text-gray-600 hover:text-gray-900 font-medium dark:text-gray-300 dark:hover:text-white">{{item.title}}</a>
+              } @else {
+                <a [href]="item.url" class="block py-3 text-gray-600 hover:text-gray-900 font-medium dark:text-gray-300 dark:hover:text-white"
+                  [attr.target]="item.openNewWindow? '_blank': null" rel="noopener noreferrer">{{item.title}}</a>
+              }
+
+            }
+          }
+      }@else {
+  <span class="block py-3 text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)] font-medium">Cargando menú…</span>
+      }
+
+
+    </div>
+  </div>
+</nav>

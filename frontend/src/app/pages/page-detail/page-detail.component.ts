@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, effect, inject } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -26,11 +27,7 @@ type ApiItemResponse<T> = { success: boolean; message: string; data: T };
   template: `
   @if (page()) {
     <section class="container mx-auto p-4">
-      <h1 class="text-3xl font-semibold mb-4">{{ page()?.title }}</h1>
-      <article class="prose" [innerHTML]="page()?.content"></article>
-      <nav class="mt-8">
-        <a routerLink="/" class="text-primary underline">Inicio</a>
-      </nav>
+    <div [innerHTML]="safeContent()"></div>
     </section>
     <script type="application/ld+json" [textContent]="jsonLd()"></script>
   } @else {
@@ -42,6 +39,7 @@ export class PageDetailComponent {
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
   private seo = inject(SeoService);
+  private sanitizer = inject(DomSanitizer);
 
   private readonly data$ = this.route.paramMap.pipe(
     map(m => m.get('slug') || ''),
@@ -62,6 +60,9 @@ export class PageDetailComponent {
     })
   );
   readonly page = toSignal<PageDetail | undefined>(this.data$);
+  readonly safeContent = toSignal<SafeHtml | undefined>(this.data$.pipe(
+    map(p => p?.content ? this.sanitizer.bypassSecurityTrustHtml(p.content) : undefined)
+  ));
 
   constructor() {
     effect(() => {

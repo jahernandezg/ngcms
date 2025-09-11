@@ -15,6 +15,7 @@ export interface MenuItem {
   slug?: string;
   pathSegments?: string[];
   children?: MenuItem[];
+  isOpen?: boolean; // solo para UI
 }
 
 @Injectable({ providedIn: 'root' })
@@ -28,22 +29,26 @@ export class MenuService {
   load() {
     if (this._loading()) return;
     this._loading.set(true);
-    this.http.get<{ success:boolean; data: MenuItem[] } | MenuItem[]>(`/api/menu`).pipe(
-      map((res) => unwrapData<MenuItem[]>(res as { success:boolean; data: MenuItem[] } | MenuItem[]))
+    this.http.get<{ success: boolean; data: MenuItem[] } | MenuItem[]>(`/api/menu`).pipe(
+      map((res) => unwrapData<MenuItem[]>(res as { success: boolean; data: MenuItem[] } | MenuItem[]))
     ).subscribe({
       next: (list) => {
         // build tree
         const byId = new Map<string, MenuItem>();
-    list.forEach(i => byId.set(i.id, { ...i, children: [] }));
+        list.forEach(i => byId.set(i.id, { ...i, children: [] }));
         const roots: MenuItem[] = [];
         list.forEach(i => {
           if (i.parentId && byId.has(i.parentId)) {
-      const parent = byId.get(i.parentId);
-      const child = byId.get(i.id);
-      if (parent && child && parent.children) parent.children.push(child);
+            const parent = byId.get(i.parentId);
+            const child = byId.get(i.id);
+
+            if (parent && child && parent.children) {
+              parent.isOpen = false; // default
+               parent.children.push(child);
+            }
           } else {
-      const root = byId.get(i.id);
-      if (root) roots.push(root);
+            const root = byId.get(i.id);
+            if (root) roots.push(root);
           }
         });
         this.items.set(roots);

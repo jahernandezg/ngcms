@@ -10,14 +10,25 @@ import { AuditService } from './audit.service';
 const sanitizeContent = (html: string) => sanitizeHtml(html, {
   allowedTags: Array.from(new Set([
     ...sanitizeHtml.defaults.allowedTags,
-    'img','h1','h2','h3','h4','h5','h6','pre','code','blockquote'
+    'img','h1','h2','h3','h4','h5','h6','pre','code','blockquote',
+    // Formularios y controles
+    'form','input','button','select','option','textarea','label','fieldset','legend'
   ])),
   allowedAttributes: {
     ...sanitizeHtml.defaults.allowedAttributes,
     a: ['href', 'name', 'target', 'rel'],
     img: ['src', 'alt'],
-    // Permitimos 'class' en todos para soporte de estilos utilitarios (tailwind, etc.)
-    '*': ['class']
+    // Atributos para formularios y controles
+    form: ['id','name','novalidate'],
+    input: ['type','name','value','placeholder','checked','disabled','required','min','max','step','pattern','multiple','size','maxlength','minlength','readonly','autocomplete','id'],
+    button: ['type','name','value','disabled','id'],
+    select: ['name','multiple','disabled','required','id'],
+    option: ['value','label','selected','disabled'],
+    textarea: ['name','rows','cols','placeholder','maxlength','minlength','readonly','disabled','required','id','wrap'],
+    label: ['for','id'],
+    fieldset: ['disabled','name','id'],
+    // Permitimos 'class', 'id' y atributos aria/data en todos para soporte de estilos/utilidad
+    '*': ['class','id','data-*','aria-*']
   },
   // Permitimos data: para imágenes embebidas base64 si se requiere.
   allowedSchemes: ['http', 'https', 'mailto', 'data']
