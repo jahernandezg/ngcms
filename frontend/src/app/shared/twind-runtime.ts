@@ -20,7 +20,10 @@ async function initTwindOnce() {
       preflight: false,
       // Keep class names readable; hash off by default
       hash: false,
-      presets: [presetTailwind({ darkMode: 'class' })],
+      // Use class-based dark mode like Tailwind
+      // This makes `dark:` variants respond to a `.dark` class on an ancestor
+      darkMode: 'class',
+      presets: [presetTailwind()],
     });
     return { tw };
   })();
