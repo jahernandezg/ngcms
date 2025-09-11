@@ -38,13 +38,13 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
     <p class="p-4">Cargando…</p>
   </ng-template>
   @if (!loading()) {
-  <section class="container-fluid" #dynRoot>
+  <section class="container-fluid site-shell" #dynRoot>
     @switch (type()) {
     @case ('homepage') {
-  <article class="prose" [innerHTML]="safeContent()"></article>
+  <article class="richtext" [innerHTML]="safeContent()"></article>
       }
       @case ('page') {
-  <article class="prose" [innerHTML]="safeContent()"></article>
+  <article class="richtext" [innerHTML]="safeContent()"></article>
       }
       @case ('blog') {
         <div class="container mx-auto p-4">

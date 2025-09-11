@@ -20,7 +20,7 @@ async function initTwindOnce() {
       preflight: false,
       // Keep class names readable; hash off by default
       hash: false,
-      presets: [presetTailwind()],
+      presets: [presetTailwind({ darkMode: 'class' })],
     });
     return { tw };
   })();
@@ -32,15 +32,30 @@ export async function applyTwindToContainer(container?: Element) {
   if (typeof document === 'undefined') return;
   const { tw } = await initTwindOnce();
   const root = container ?? document.body;
-  // Twind v1: tw(className) returns a class string and ensures styles exist
-  // We iterate class-bearing nodes and call tw on their className
-  const nodes = root.querySelectorAll('[class]');
-  nodes.forEach((el) => {
-    const elem = el as HTMLElement;
-    const cls = elem.getAttribute('class') || '';
-    if (!cls.trim()) return;
-    const applied = tw(cls);
-    // Replace class to the normalized/generated form to ensure consistency
-    if (applied && applied !== cls) elem.setAttribute('class', applied);
-  });
+
+  const origWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    if (typeof args[0] === 'string' && args[0].includes('[TWIND_INVALID_CLASS]')) return;
+    // @ts-ignore
+    return origWarn.apply(console, args as any);
+  };
+  try {
+    const deny = new Set([
+      'theme-transition', 'dark-mode', 'site-shell', 'container-fluid', 'bg-grid-pattern', 'prose', 'dark'
+    ]);
+    const nodes = root.querySelectorAll('[class]');
+    nodes.forEach((el) => {
+      const elem = el as HTMLElement;
+      const cls = (elem.getAttribute('class') || '').trim();
+      if (!cls) return;
+      const tokens = cls.split(/\s+/);
+      const tailwindish = tokens.filter(t => !deny.has(t));
+      if (!tailwindish.length) return;
+      // IMPORTANTE: Solo generamos CSS, no reescribimos className para conservar tokens como "dark:*"
+      // que son necesarios para que las reglas variantes apliquen al togglear el modo oscuro.
+      tailwindish.forEach(t => { try { tw(t); } catch {} });
+    });
+  } finally {
+    console.warn = origWarn;
+  }
 }
