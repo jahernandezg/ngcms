@@ -263,7 +263,11 @@ export class DynamicPublicComponent implements AfterViewInit{
     return ['/', post.slug];
   }
   // Fallback de excerpt: si no hay excerpt, generar desde el contenido (limpio y truncado)
-  async ngAfterViewInit() { await this.applyTwindNow(); }
+  async ngAfterViewInit() {
+    const el = this.dynRoot?.nativeElement;
+    if (el) this.theme.attachContainer(el);
+    await this.applyTwindNow();
+  }
   private async applyTwindNow() {
     const container = this.dynRoot?.nativeElement || document.body;
     await applyTwindToContainer(container);
