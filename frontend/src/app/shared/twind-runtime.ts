@@ -39,7 +39,6 @@ export async function applyTwindToContainer(container?: Element) {
   const origWarn = console.warn;
   console.warn = (...args: unknown[]) => {
     if (typeof args[0] === 'string' && args[0].includes('[TWIND_INVALID_CLASS]')) return;
-    // @ts-expect-error: spread types are not inferred in this context
     return (origWarn as (...a: unknown[]) => void).apply(console, args as unknown[]);
   };
   try {
