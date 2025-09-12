@@ -41,7 +41,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
   <section class="container-fluid site-shell" #dynRoot>
     @switch (type()) {
     @case ('homepage') {
-  <article [innerHTML]="safeContent()"></article>
+  <article class="richtext" [innerHTML]="safeContent()"></article>
       }
       @case ('page') {
   <article  [innerHTML]="safeContent()"></article>
