@@ -108,18 +108,26 @@ jobs:
           script_stop: true
           envs: GHCR_PAT,GHCR_USER,GITHUB_ACTOR
           script: |
-            set -e
+            set -euo pipefail
             cd ${{ secrets.DEPLOY_PATH }}
+
+            # Validar .env presente y variables mínimas
+            if [ ! -f .env ]; then
+              echo "ERROR: Falta archivo .env en $PWD" >&2
+              echo "Cree un .env con al menos: POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB" >&2
+              echo "Además, configure API_URL si su frontend lo requiere." >&2
+              exit 1
+            fi
+            sed -i 's/\r$//' .env || true
+
             # Docker login en GHCR para pulls privados (usar GHCR_USER si está definido, si no GITHUB_ACTOR)
             if [ -z "${GHCR_PAT}" ]; then echo "Falta secreto GHCR_PAT" >&2; exit 1; fi
             USER_FOR_GHCR="${GHCR_USER:-${GITHUB_ACTOR}}"
             echo "Autenticando en ghcr.io como ${USER_FOR_GHCR}"
             echo "${GHCR_PAT}" | docker login ghcr.io -u "${USER_FOR_GHCR}" --password-stdin
+
             # Definir la imagen de backend para sustitución de variables en compose
             export BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
-
-            # Normalizar EOL por si .env tiene CRLF (Windows)
-            [ -f .env ] && sed -i 's/\r$//' .env || true
 
             # Detectar comando compose disponible
             if command -v docker-compose >/dev/null 2>&1; then
@@ -138,17 +146,31 @@ jobs:
             $DC -f docker-compose.deploy.yml up -d db
             echo "Esperando DB saludable..."
             for i in $(seq 1 60); do
-              if $DC -f docker-compose.deploy.yml exec -T db pg_isready -U ${POSTGRES_USER:-postgres} ; then
-                echo "DB lista"; break; fi; sleep 2; done
+              if $DC -f docker-compose.deploy.yml exec -T db pg_isready -U ${POSTGRES_USER:-postgres} ; then echo "DB lista"; break; fi; sleep 2; done
 
-            # Migraciones y seed opcional
+            # Migraciones y seed opcional usando Prisma (evitar dependencia de psql/tabla exacta)
             echo "Prisma migrate deploy..."
             BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
-            echo "Verificando necesidad de seed..."
-            NEED_SEED=$($DC -f docker-compose.deploy.yml exec -T db psql -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-cms} -tAc "SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='User') THEN (SELECT CASE WHEN (SELECT COUNT(*) FROM \"User\")=0 THEN 'yes' ELSE 'no' END) ELSE 'yes' END;")
+
+            echo "Verificando necesidad de seed (Prisma)..."
+            NEED_SEED=$($DC -f docker-compose.deploy.yml run --rm -e NODE_ENV=production backend node -e '
+              const { PrismaClient } = require("@prisma/client");
+              const p = new PrismaClient();
+              (async () => {
+                try {
+                  let need = "yes";
+                  const count = await p.user.count().catch(() => -1);
+                  if (count > 0) need = "no";
+                  else if (count === 0) need = "yes";
+                  process.stdout.write(need);
+                } catch(e) { process.stdout.write("yes"); }
+                finally { await p.$disconnect(); }
+              })();
+            ' 2>/dev/null || echo yes)
+            echo "NEED_SEED=$NEED_SEED"
             if [ "$NEED_SEED" = "yes" ]; then
               echo "Prisma db seed..."
-              BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma
+              BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma || { echo "Seed falló" >&2; exit 1; }
             else
               echo "Seed no necesario."
             fi
