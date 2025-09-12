@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit, PLATFORM_ID, signal, DestroyRef } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { isPlatformBrowser } from '@angular/common';
 import { SeoService } from '../../shared/seo.service';
 import { RouterModule, ActivatedRoute } from '@angular/router';
@@ -8,17 +9,17 @@ import { skip } from 'rxjs/operators';
 import { HomeDataService } from './home-data.service';
 import { HttpClient } from '@angular/common/http';
 import { unwrapData } from '../../shared/http-utils';
+import { ThemeService } from '../../shared/theme.service';
 
 @Component({
   selector: 'app-home',
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <section class="container mx-auto p-4">
+    <section>
       <!-- Modo Página Home (sin cambiar la URL) -->
       @if (homepage()) {
-        <h1 class="text-3xl font-semibold mb-4">{{ homepage()?.title }}</h1>
-        <article class="prose" [innerHTML]="homepage()?.content"></article>
+  <article [innerHTML]="safeHomeContent()"></article>
       } @else {
         <h1 class="text-2xl font-semibold mb-4">Últimos posts</h1>
         @if (!svc.loading()) {
@@ -66,9 +67,12 @@ export class HomeComponent implements OnInit {
   private http = inject(HttpClient);
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
+  private sanitizer = inject(DomSanitizer);
+  private theme = inject(ThemeService);
 
   // Página marcada como home (si existe)
   readonly homepage = signal<PageDetail | null>(null);
+  readonly safeHomeContent = signal<SafeHtml | undefined>(undefined);
   private homepageLoaded = false; // ya se cargó homepage (éxito)
   private blogLoaded = false; // evita cargas duplicadas de posts
 
@@ -111,6 +115,7 @@ export class HomeComponent implements OnInit {
     const data = unwrapData<PageDetail | null>(res as unknown as { data: PageDetail | null } | PageDetail | null);
         if (data) {
           this.homepage.set(data);
+          this.safeHomeContent.set(this.sanitizer.bypassSecurityTrustHtml(data.content));
           this.homepageLoaded = true;
           const seo = data.seo || {};
           this.seo.set({

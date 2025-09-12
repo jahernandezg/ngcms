@@ -11,3 +11,42 @@
 	--color-surface-alt: var(--color-surface-alt);
 	--color-border-app: var(--color-border);
 }
+
+/* Safelist (Tailwind v4) para contenido dinámico del Blog/CMS
+   Nota: Tailwind genera CSS SOLO para clases detectadas en build time.
+   Estas líneas aseguran que las utilidades usadas en HTML dinámico
+   estén disponibles en producción. Ajusta/expande según tus necesidades. */
+@source inline("prose");
+
+/* Tipografía y alineación básica */
+@source inline("{text-left,text-center,text-right,italic,not-italic,underline}");
+@source inline("font-{sans,serif,mono}");
+@source inline("font-{light,normal,medium,semibold,bold,extrabold}");
+@source inline("text-{xs,sm,base,lg,xl,2xl,3xl}");
+@source inline("leading-{none,tight,normal,relaxed,loose}");
+@source inline("tracking-{tighter,tight,normal,wide,wider}");
+
+/* Espaciados comunes */
+@source inline("{m,p}{-,x,y,t,b,l,r}-{0,1,2,3,4,5,6,8,10,12,16}");
+@source inline("{space-y-,space-x-}{0,1,2,3,4,5,6,8,10,12}");
+
+/* Listas */
+@source inline("list-{disc,decimal,none} pl-{4,6,8}");
+
+/* Colores semánticos basados en variables del tema */
+@source inline("text-{primary,secondary,text,text-secondary,error,success,warning}");
+@source inline("bg-{surface,surface-alt,primary,secondary}");
+@source inline("border-{border}");
+
+/* Utilidades genéricas útiles en contenido */
+@source inline("rounded rounded-{sm,md,lg,full}");
+@source inline("border border-{0,2}");
+@source inline("w-full max-w-none mx-auto");
+
+/* Paleta gris por si el contenido usa clases por defecto */
+@source inline("bg-gray-{50,{100..900..100},950}");
+@source inline("text-gray-{600,700,800}");
+@source inline("border-gray-{100,200,300}");
+
+/* Variantes responsivas más comunes */
+@source inline("{sm:,md:,lg:,xl:,2xl:,}{text-left,text-center,mt-4,mb-4,px-4}");

@@ -5,7 +5,7 @@
   "types": ["node"],
   "declaration": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/app/layout/main-nav/main-nav.component.ts"],
   "exclude": [
     "jest.config.ts",
     "src/test-setup.ts",

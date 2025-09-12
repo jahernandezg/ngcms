@@ -1,6 +1,7 @@
 
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -9,6 +10,8 @@ import { switchMap } from 'rxjs/operators';
 import { SeoService } from '../../shared/seo.service';
 import { unwrapData } from '../../shared/http-utils';
 import { PostDetailComponent } from '../post-detail/post-detail.component';
+import { ThemeService } from '../../shared/theme.service';
+import { applyTwindToContainer } from '../../shared/twind-runtime';
 
 type ResolvedTypes = 'homepage' | 'page' | 'blog' | 'category' | 'post' | 'not_found';
 interface PagePayload { id: string; title: string; content?: string; excerpt?: string; slug?: string; }
@@ -35,23 +38,22 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
     <p class="p-4">Cargando…</p>
   </ng-template>
   @if (!loading()) {
-  <section class="container mx-auto p-4">
+  <section class="container-fluid site-shell" #dynRoot>
     @switch (type()) {
-      @case ('homepage') {
-  <h1 class="text-3xl font-semibold mb-4">{{ p()?.['title'] }}</h1>
-  <article class="prose" [innerHTML]="p()?.['content']"></article>
+    @case ('homepage') {
+  <article [innerHTML]="safeContent()"></article>
       }
       @case ('page') {
-  <h1 class="text-3xl font-semibold mb-4">{{ p()?.['title'] }}</h1>
-  <article class="prose" [innerHTML]="p()?.['content']"></article>
+  <article  [innerHTML]="safeContent()"></article>
       }
       @case ('blog') {
+        <div class="container mx-auto p-4">
   <h1 class="text-2xl font-semibold mb-4">{{ p()?.['title'] || 'Blog' }}</h1>
   @if (loadingMore() && page() === 1) { <div class="text-sm text-text-secondary mb-2">Cargando posts…</div> }
   @if (posts() && posts()?.length) {
     <div class="space-y-6">
       @for (post of posts()!; track post.id) {
-      <article class="border-b pb-4 last:border-b-0">
+      <article class="richtext border-b pb-4 last:border-b-0">
         <h2 class="text-xl font-semibold leading-snug">
           <a [routerLink]="buildPostLink(post)" class="hover:underline">{{ post.title }}</a>
         </h2>
@@ -76,8 +78,11 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
           <button (click)="loadMore()" class="mt-4 px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-50">Cargar más</button>
         }
         @if (loadingMore() && page() > 1) { <div class="text-sm text-text-secondary mt-2">Cargando…</div> }
+
+        </div>
       }
       @case ('category') {
+         <div class="container mx-auto p-4">
   <h1 class="text-2xl font-semibold mb-4">Categoría: {{ p()?.['name'] }}</h1>
   @if (loadingMore() && page() === 1) { <div class="text-sm text-text-secondary mb-2">Cargando posts…</div> }
   @if (posts() && posts()?.length) {
@@ -108,6 +113,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
           <button (click)="loadMore()" class="mt-4 px-4 py-2 bg-gray-800 text-white rounded disabled:opacity-50">Cargar más</button>
         }
         @if (loadingMore() && page() > 1) { <div class="text-sm text-text-secondary mt-2">Cargando…</div> }
+        </div>
       }
       @case ('post') {
         <app-post-detail [slug]="postSlug()"></app-post-detail>
@@ -121,11 +127,12 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
   } @else { <ng-container [ngTemplateOutlet]="loadingTpl"></ng-container> }
   `
 })
-export class DynamicPublicComponent {
+export class DynamicPublicComponent implements AfterViewInit{
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
   private seo = inject(SeoService);
   private router = inject(Router);
+  private sanitizer = inject(DomSanitizer);
 
   readonly loading = signal(true);
   readonly type = signal<string>('loading');
@@ -137,8 +144,11 @@ export class DynamicPublicComponent {
   readonly page = signal<number>(1);
   readonly limit = 20;
   readonly loadingMore = signal<boolean>(false);
+  readonly safeContent = signal<SafeHtml | undefined>(undefined);
+  readonly theme = inject(ThemeService);
+  @ViewChild('dynRoot', { static: false }) dynRoot?: ElementRef<HTMLElement>;
 
-  constructor(){
+  constructor() {
     this.route.url.pipe(
       takeUntilDestroyed(),
       switchMap(segments => {
@@ -150,15 +160,24 @@ export class DynamicPublicComponent {
       next: (res) => {
         this.loading.set(false);
         this.type.set(res.data.type || 'not_found');
-        this.payload.set(res.data.payload || null);
+  this.payload.set(res.data.payload || null);
+  const payload: AnyPayload = res.data.payload;
+  const html = (payload && typeof payload === 'object') ? (payload as Record<string, unknown>)['content'] : undefined;
+  if (typeof html === 'string') this.safeContent.set(this.sanitizer.bypassSecurityTrustHtml(html));
+
+          // Aplicar Twind a clases dentro del contenedor dinámico después de inyectar HTML
+          queueMicrotask(async () => { try { await this.applyTwindNow(); } catch { /* empty */ } });
+
+        setTimeout(() => {
+            this.theme.forceStyleRefresh();
+          }, 500);
         // SEO básico
-        const payload: AnyPayload = res.data.payload;
         if (res.data.type === 'page' || res.data.type === 'homepage') {
           const p = payload as PagePayload;
-          this.seo.set({ title: p.title, description: p.excerpt || p.content?.slice(0,160) });
+          this.seo.set({ title: p.title, description: p.excerpt || p.content?.slice(0, 160) });
         } else if (res.data.type === 'post') {
           const p = payload as PostPayload;
-          this.seo.set({ title: p.title, description: p.excerpt || p.content?.slice(0,160), type: 'article' });
+          this.seo.set({ title: p.title, description: p.excerpt || p.content?.slice(0, 160), type: 'article' });
         } else if (res.data.type === 'category') {
           const p = payload as CategoryPayload;
           // canonical siempre igual a la ruta real, sea top-level o anidada
@@ -175,7 +194,7 @@ export class DynamicPublicComponent {
           this.fetchBlogPosts();
         } else if (res.data.type === 'category') {
           const slug = (payload as CategoryPayload).slug;
-            if (slug) { this.resetListingState(); this.fetchCategoryPosts(slug); }
+          if (slug) { this.resetListingState(); this.fetchCategoryPosts(slug); }
         } else {
           this.posts.set(null);
           this.totalPosts.set(0);
@@ -188,13 +207,12 @@ export class DynamicPublicComponent {
       }
     });
   }
-
   p(): Record<string, unknown> | null {
     const v = this.payload();
     return (v && typeof v === 'object') ? v as Record<string, unknown> : null;
   }
 
-  private fetchBlogPosts(){
+  private fetchBlogPosts() {
     const nextPage = this.page();
     this.loadingMore.set(true);
     this.http.get<ApiListEnvelope<PostListItem> | { data: PostListItem[]; meta?: { total: number } }>(`/api/posts`, { params: { limit: this.limit, page: nextPage } })
@@ -207,7 +225,7 @@ export class DynamicPublicComponent {
         this.loadingMore.set(false);
       });
   }
-  private fetchCategoryPosts(slug: string){
+  private fetchCategoryPosts(slug: string) {
     const nextPage = this.page();
     this.loadingMore.set(true);
     this.http.get<ApiListEnvelope<PostListItem> | { data: PostListItem[]; meta?: { total: number } }>(`/api/posts/category/${slug}`, { params: { limit: this.limit, page: nextPage } })
@@ -221,7 +239,7 @@ export class DynamicPublicComponent {
       });
   }
 
-  loadMore(){
+  loadMore() {
     if (this.loadingMore()) return;
     const hasMore = (this.posts()?.length || 0) < this.totalPosts();
     if (!hasMore) return;
@@ -234,9 +252,9 @@ export class DynamicPublicComponent {
   }
 
   hasMore() { return (this.posts()?.length || 0) < this.totalPosts(); }
-  private resetListingState(){ this.posts.set([]); this.totalPosts.set(0); this.page.set(1); }
+  private resetListingState() { this.posts.set([]); this.totalPosts.set(0); this.page.set(1); }
 
-  buildPostLink(post: PostListItem){
+  buildPostLink(post: PostListItem) {
     // Si estamos en blog o categoría, anexar slug al path base; si no, root
     const base = this.currentPath().split('/').filter(Boolean);
     if (this.type() === 'blog' || this.type() === 'category') {
@@ -245,6 +263,12 @@ export class DynamicPublicComponent {
     return ['/', post.slug];
   }
   // Fallback de excerpt: si no hay excerpt, generar desde el contenido (limpio y truncado)
+  async ngAfterViewInit() { await this.applyTwindNow(); }
+  private async applyTwindNow() {
+    const container = this.dynRoot?.nativeElement || document.body;
+    await applyTwindToContainer(container);
+  }
+
   getExcerpt(post: { excerpt?: string | null; content?: string | null }): string {
     if (post.excerpt && post.excerpt.trim()) return post.excerpt;
     if (post.content) {

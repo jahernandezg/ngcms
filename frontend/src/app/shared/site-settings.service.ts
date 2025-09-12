@@ -5,6 +5,7 @@ import { unwrapData, type ApiEnvelope } from './http-utils';
 
 export interface SiteSettingsPublic {
   siteName: string;
+  description?: string | null;
   tagline?: string | null;
   defaultMetaDesc?: string | null;
   logoUrl?: string | null; // fallback (logoLight)
@@ -47,6 +48,7 @@ export class SiteSettingsService {
     const cfg = unwrapData<BlogConfigPublic>(s as ApiEnvelope<BlogConfigPublic>);
         const mapped: SiteSettingsPublic = {
           siteName: cfg.blogName,
+          description: cfg.description ?? null,
           tagline: cfg.description ?? null,
           defaultMetaDesc: cfg.metaDescription ?? null,
           logoUrl: cfg.logoLight ?? cfg.logoDark ?? null,

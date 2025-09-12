@@ -1,0 +1,94 @@
+@import url('../../../assets/styles/theme-variables.css');
+
+/* Scope-only styles for public layout */
+:host { display: contents; }
+
+
+@import 'tailwindcss';
+
+/* Configuración personalizada */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    line-height: 1.6;
+  }
+}
+
+/* Animaciones personalizadas */
+@layer utilities {
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.8s ease-out;
+  }
+
+  .animate-fade-down {
+    animation: fadeDown 0.8s ease-out;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeDown {
+  0% {
+    opacity: 0; /* Start completely transparent */
+    filter: blur(12px);
+    transform: translateY(-20px); /* Start 20 pixels above its final position */
+  }
+  100% {
+    opacity: 1; /* End fully opaque */
+    transform: translateY(0); /* End at its original vertical position */
+  }
+}
+
+.animated-element, .revealing-image {
+    animation: paralax linear both;
+  animation-timeline: scroll(root block);
+  animation-range: 25vh 75vh;
+}
+
+
+@keyframes paralax {
+  to {
+    transform: translateY(250px) scale(1.1);
+  }
+}
+
+
+/* Efectos de hover personalizados */
+.hover-lift {
+  transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Glassmorphism para el navbar */
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+}

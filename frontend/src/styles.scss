@@ -15,3 +15,26 @@ html, body {
 .hover\:text-primary:hover { color: var(--color-primary) !important; }
 /* Secundario */
 .text-text-secondary { color: var(--color-text-secondary) !important; }
+
+/* Tipografía base para contenido dinámico sin @tailwindcss/typography */
+.richtext {
+  color: var(--theme-text);
+}
+.richtext h1, .richtext h2, .richtext h3, .richtext h4, .richtext h5, .richtext h6 { color: var(--theme-text); font-weight: 700; line-height: 1.2; margin: 1.2em 0 .6em; }
+.richtext h1 { font-size: clamp(2rem, 5vw, 2.5rem); }
+.richtext h2 { font-size: clamp(1.75rem, 4vw, 2rem); }
+.richtext h3 { font-size: clamp(1.5rem, 3vw, 1.75rem); }
+.richtext p { margin: 1em 0; color: var(--theme-text); line-height: 1.7; }
+.richtext a { color: var(--theme-primary); text-decoration: none; }
+.richtext a:hover { text-decoration: underline; }
+.richtext ul, .richtext ol { margin: 1em 0 1em 1.25em; padding: 0; }
+.richtext ul { list-style: disc; }
+.richtext ol { list-style: decimal; }
+.richtext li { margin: .25em 0; }
+.richtext blockquote { border-left: 4px solid var(--theme-border); padding-left: 1em; color: var(--theme-text-secondary); margin: 1em 0; }
+.richtext img { max-width: 100%; height: auto; border-radius: .5rem; }
+.richtext code { background: color-mix(in oklab, var(--theme-surface) 85%, black); padding: .2em .35em; border-radius: .35em; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+.richtext pre { background: color-mix(in oklab, var(--theme-surface) 80%, black); padding: 1rem; border-radius: .75rem; overflow: auto; }
+
+/* Modo dark: las variables ya cambian, pero aplica algunos refinamientos */
+:root.dark .richtext blockquote { border-left-color: var(--theme-border); }
