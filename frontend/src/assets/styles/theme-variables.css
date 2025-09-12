@@ -121,6 +121,9 @@
 }
 
 /* Base component styles using theme variables */
+/* NOTE: Este archivo define variables y algunos estilos base del sistema de tema.
+   Si el presupuesto vuelve a fallar, podemos mover las clases utilitarias .theme-*
+   a un CSS cargado condicionalmente o dividirlo por features. */
 .theme-container {
   max-width: var(--theme-container-width);
   margin: 0 auto;
