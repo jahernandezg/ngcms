@@ -39,8 +39,8 @@ export async function applyTwindToContainer(container?: Element) {
   const origWarn = console.warn;
   console.warn = (...args: unknown[]) => {
     if (typeof args[0] === 'string' && args[0].includes('[TWIND_INVALID_CLASS]')) return;
-    // @ts-ignore
-    return origWarn.apply(console, args as any);
+    // @ts-expect-error: spread types are not inferred in this context
+    return (origWarn as (...a: unknown[]) => void).apply(console, args as unknown[]);
   };
   try {
     const deny = new Set([
@@ -56,7 +56,7 @@ export async function applyTwindToContainer(container?: Element) {
       if (!tailwindish.length) return;
       // IMPORTANTE: Solo generamos CSS, no reescribimos className para conservar tokens como "dark:*"
       // que son necesarios para que las reglas variantes apliquen al togglear el modo oscuro.
-      tailwindish.forEach(t => { try { tw(t); } catch {} });
+      tailwindish.forEach((t) => { try { tw(t); } catch { /* ignore invalid token */ } });
     });
   } finally {
     console.warn = origWarn;
