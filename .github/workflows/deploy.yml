@@ -92,6 +92,15 @@ jobs:
             set -euo pipefail
             cd ${{ secrets.DEPLOY_PATH }}
 
+            # Validar .env presente y variables mínimas
+            if [ ! -f .env ]; then
+              echo "ERROR: Falta archivo .env en $PWD" >&2
+              echo "Cree un .env con al menos: POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB" >&2
+              echo "Además, configure API_URL si su frontend lo requiere." >&2
+              exit 1
+            fi
+            sed -i 's/\r$//' .env || true
+
             # Login GHCR para pulls privados (no interactivo)
             if [ -z "${GHCR_PAT}" ]; then echo "Falta secreto GHCR_PAT" >&2; exit 1; fi
             USER_FOR_GHCR="${GHCR_USER:-${GITHUB_ACTOR}}"
@@ -122,11 +131,9 @@ jobs:
               (async () => {
                 try {
                   let need = "yes";
-                  // Intentar contar usuarios; si existe tabla y count > 0 => no
                   const count = await p.user.count().catch(() => -1);
-                  if (count > 0) need = "no"; // ya hay registros
-                  else if (count === 0) need = "yes"; // tabla existe y vacía
-                  // si count -1 (tabla no existe aún), seed = yes
+                  if (count > 0) need = "no";
+                  else if (count === 0) need = "yes";
                   process.stdout.write(need);
                 } catch(e) { process.stdout.write("yes"); }
                 finally { await p.$disconnect(); }
