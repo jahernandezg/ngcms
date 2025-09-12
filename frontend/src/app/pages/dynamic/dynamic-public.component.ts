@@ -1,6 +1,6 @@
 
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
@@ -41,10 +41,10 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
   <section class="container-fluid site-shell" #dynRoot>
     @switch (type()) {
     @case ('homepage') {
-  <article class="richtext" [innerHTML]="safeContent()"></article>
+  <article [innerHTML]="safeContent()"></article>
       }
       @case ('page') {
-  <article class="richtext" [innerHTML]="safeContent()"></article>
+  <article  [innerHTML]="safeContent()"></article>
       }
       @case ('blog') {
         <div class="container mx-auto p-4">
@@ -53,7 +53,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
   @if (posts() && posts()?.length) {
     <div class="space-y-6">
       @for (post of posts()!; track post.id) {
-      <article class="border-b pb-4 last:border-b-0">
+      <article class="richtext border-b pb-4 last:border-b-0">
         <h2 class="text-xl font-semibold leading-snug">
           <a [routerLink]="buildPostLink(post)" class="hover:underline">{{ post.title }}</a>
         </h2>
@@ -127,7 +127,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
   } @else { <ng-container [ngTemplateOutlet]="loadingTpl"></ng-container> }
   `
 })
-export class DynamicPublicComponent implements AfterViewInit, OnDestroy {
+export class DynamicPublicComponent implements AfterViewInit{
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
   private seo = inject(SeoService);
@@ -166,10 +166,9 @@ export class DynamicPublicComponent implements AfterViewInit, OnDestroy {
   if (typeof html === 'string') this.safeContent.set(this.sanitizer.bypassSecurityTrustHtml(html));
 
           // Aplicar Twind a clases dentro del contenedor dinámico después de inyectar HTML
-          queueMicrotask(async () => { try { await this.applyTwindNow(); } catch {} });
+          queueMicrotask(async () => { try { await this.applyTwindNow(); } catch { /* empty */ } });
 
         setTimeout(() => {
-            console.log('Tailwind styles refreshed antes...');
             this.theme.forceStyleRefresh();
           }, 500);
         // SEO básico
@@ -208,7 +207,6 @@ export class DynamicPublicComponent implements AfterViewInit, OnDestroy {
       }
     });
   }
-
   p(): Record<string, unknown> | null {
     const v = this.payload();
     return (v && typeof v === 'object') ? v as Record<string, unknown> : null;

@@ -106,7 +106,17 @@ export class PageEditorComponent implements OnDestroy {
         const isEnvelope = (v: unknown): v is { data: unknown } => !!v && typeof v === 'object' && 'data' in v;
         const p = isPage(raw) ? raw : (isEnvelope(raw) && isPage(raw.data) ? raw.data : null);
         this.saving.set(false);
-        if (p?.id && this.isNew()) { this.router.navigate(['/admin/pages', p.id], { state: { flash: 'created' } }); this.success.set('Página creada'); this.startAutoHideSuccess(); }
+        if (p?.id && this.isNew()) {
+          // Navegar al editor de la nueva página con flash
+          this.router.navigate(['/admin/pages', p.id], { state: { flash: 'created' } });
+          this.success.set('Página creada');
+          this.startAutoHideSuccess();
+        } else if (p?.id && !this.isNew()) {
+          // Mostrar éxito al actualizar, como en otros CRUDs
+          const s = (payload as { status?: string }).status || 'DRAFT';
+          this.success.set(s === 'PUBLISHED' ? 'Página publicada' : 'Página actualizada');
+          this.startAutoHideSuccess();
+        }
       },
   error: () => { this.saving.set(false); this.error.set('Error al guardar'); }
     });
