@@ -17,17 +17,12 @@ async function initTwindOnce() {
     ]);
     const { setup, tw, dom } = core as typeof import('@twind/core');
     setup({
-      // Inject rules into the real DOM <style> tag so they actually apply
-      sheet: dom(),
       // No preflight to avoid global reset conflicts with app CSS
       preflight: false,
       // Keep class names readable; hash off by default
       hash: false,
-      // Use class-based dark mode like Tailwind
-      // This makes `dark:` variants respond to a `.dark` class on an ancestor
-      darkMode: 'class',
-      presets: [presetTailwind()],
-    });
+      presets: [presetTailwind({ darkMode: 'class' as const })],
+    }, dom());
     return { tw };
   })();
   return twindInitPromise;
