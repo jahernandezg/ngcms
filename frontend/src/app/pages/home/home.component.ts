@@ -10,6 +10,8 @@ import { HomeDataService } from './home-data.service';
 import { HttpClient } from '@angular/common/http';
 import { unwrapData } from '../../shared/http-utils';
 import { ThemeService } from '../../shared/theme.service';
+import { TwindService } from '../../shared/twind.service';
+
 
 @Component({
   selector: 'app-home',
@@ -69,6 +71,7 @@ export class HomeComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private sanitizer = inject(DomSanitizer);
   private theme = inject(ThemeService);
+  private twind = inject(TwindService);
 
   // Página marcada como home (si existe)
   readonly homepage = signal<PageDetail | null>(null);
@@ -123,12 +126,19 @@ export class HomeComponent implements OnInit {
             description: seo.description || data.excerpt || 'Página de inicio',
             canonical: '/',
           });
+
+          queueMicrotask(async () => { try { await this.applyTwindNow(); } catch { /* empty */ } });
         } else {
           this.enterBlogMode();
         }
       },
       error: () => this.enterBlogMode()
     });
+  }
+
+   private async applyTwindNow() {
+    const container =  document.body;
+    await this.twind.applyToContainer(container);
   }
 
   private enterBlogMode() {

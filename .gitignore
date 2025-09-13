@@ -57,3 +57,6 @@ static/
 .github/instructions/nx.instructions.md
 
 ultimo-chat.txt
+
+# Local Git credential store (do NOT commit)
+.git-credentials
