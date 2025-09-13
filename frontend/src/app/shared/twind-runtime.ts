@@ -11,11 +11,14 @@ async function initTwindOnce() {
     return twindInitPromise;
   }
   twindInitPromise = (async () => {
-    const [{ setup, tw }, { default: presetTailwind }] = await Promise.all([
+    const [core, { default: presetTailwind }] = await Promise.all([
       import('@twind/core'),
       import('@twind/preset-tailwind'),
     ]);
+    const { setup, tw, dom } = core as typeof import('@twind/core');
     setup({
+      // Inject rules into the real DOM <style> tag so they actually apply
+      sheet: dom(),
       // No preflight to avoid global reset conflicts with app CSS
       preflight: false,
       // Keep class names readable; hash off by default
@@ -54,8 +57,8 @@ export async function applyTwindToContainer(container?: Element) {
       const tailwindish = tokens.filter(t => !deny.has(t));
       if (!tailwindish.length) return;
       // IMPORTANTE: Solo generamos CSS, no reescribimos className para conservar tokens como "dark:*"
-      // que son necesarios para que las reglas variantes apliquen al togglear el modo oscuro.
-      tailwindish.forEach((t) => { try { tw(t); } catch { /* ignore invalid token */ } });
+      // También pasamos la cadena completa a tw() para soportar combinaciones y variantes (hover:, md:, etc.)
+      try { tw(tailwindish.join(' ')); } catch { /* ignore invalid token */ }
     });
   } finally {
     console.warn = origWarn;
