@@ -11,7 +11,7 @@ import { SeoService } from '../../shared/seo.service';
 import { unwrapData } from '../../shared/http-utils';
 import { PostDetailComponent } from '../post-detail/post-detail.component';
 import { ThemeService } from '../../shared/theme.service';
-import { applyTwindToContainer } from '../../shared/twind-runtime';
+import { TwindService } from '../../shared/twind.service';
 
 type ResolvedTypes = 'homepage' | 'page' | 'blog' | 'category' | 'post' | 'not_found';
 interface PagePayload { id: string; title: string; content?: string; excerpt?: string; slug?: string; }
@@ -41,7 +41,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; me
   <section class="container-fluid site-shell" #dynRoot>
     @switch (type()) {
     @case ('homepage') {
-  <article class="richtext" [innerHTML]="safeContent()"></article>
+  <article [innerHTML]="safeContent()"></article>
       }
       @case ('page') {
   <article  [innerHTML]="safeContent()"></article>
@@ -133,6 +133,7 @@ export class DynamicPublicComponent implements AfterViewInit{
   private seo = inject(SeoService);
   private router = inject(Router);
   private sanitizer = inject(DomSanitizer);
+  private twind = inject(TwindService);
 
   readonly loading = signal(true);
   readonly type = signal<string>('loading');
@@ -270,7 +271,7 @@ export class DynamicPublicComponent implements AfterViewInit{
   }
   private async applyTwindNow() {
     const container = this.dynRoot?.nativeElement || document.body;
-    await applyTwindToContainer(container);
+    await this.twind.applyToContainer(container);
   }
 
   getExcerpt(post: { excerpt?: string | null; content?: string | null }): string {

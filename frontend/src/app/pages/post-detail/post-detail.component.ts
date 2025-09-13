@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SeoService } from '../../shared/seo.service';
+import { TwindService } from '../../shared/twind.service';
 import { unwrapData } from '../../shared/http-utils';
 
 type PostDetail = {
@@ -72,6 +73,7 @@ export class PostDetailComponent {
   private seo = inject(SeoService);
   private destroyRef = inject(DestroyRef);
   private sanitizer = inject(DomSanitizer);
+  private twind = inject(TwindService);
 
   private _slugInput?: string;
   @Input() set slug(value: string | undefined) {
@@ -120,6 +122,19 @@ export class PostDetailComponent {
   const desc = p.excerpt || this.truncate(p.content, 160);
   this.seo.set({ title: p.title, description: desc, type: 'article', canonical: path });
     });
+    // Re-aplicar Twind cuando cambia el contenido seguro
+    effect(() => {
+      void this.safeContent();
+      queueMicrotask(async () => {
+        try { await this.twind.applyToContainer(this.getContentRoot()); } catch { /* noop */ }
+      });
+    });
+  }
+
+  private getContentRoot(): Element | undefined {
+    // Si tu template tiene un contenedor específico, preferimos aplicarlo allí; fallback a body
+    const el = (document.querySelector('app-post-detail article') as Element | null) ?? undefined;
+    return el ?? document.body;
   }
 
   private fetchPost(slugOrId: string) {
