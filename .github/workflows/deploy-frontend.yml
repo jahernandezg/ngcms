@@ -58,22 +58,22 @@ jobs:
           ls -la dist/frontend || true
           test -d dist/frontend/browser
 
-      - name: Check env.js presence on FTP server (informational)
+      - name: Crear env.js (runtime config)
+        shell: bash
         run: |
           set -e
-          SERVER="${{ secrets.FTP_HOST }}"
-          USER="${{ secrets.FTP_USERNAME }}"
-          PASS="${{ secrets.FTP_PASSWORD }}"
-          DIR="${{ secrets.FTP_REMOTE_DIR }}"
-          echo "Listing ${DIR} on ${SERVER} via FTP (to check env.js)"
-          # Try to list directory (may vary by server); ignore errors but print output if any
-          OUT=$(curl -s --list-only --disable-epsv --ftp-method nocwd -u "$USER:$PASS" "ftp://${SERVER}${DIR}" || true)
-          echo "$OUT"
-          if echo "$OUT" | grep -qE "(^|/)env\.js$|(^| )env\.js$|^env\.js$"; then
-            echo "env.js found. It will be preserved by deploy."
-          else
-            echo "env.js not found in ${DIR}. If you need runtime config, upload env.js (see frontend/public/env.example.js)."
-          fi
+          # Genera un archivo de runtime config dentro del build estático
+          mkdir -p dist/frontend/browser
+          cat > dist/frontend/browser/env.js << 'EOF'
+          window.__ENV__ = {
+            OPENAPI_URL: ${{ toJSON(vars.OPENAPI_URL) }},
+            API_URL: ${{ toJSON(vars.API_URL) }},
+            SENTRY_DSN: ${{ toJSON(secrets.SENTRY_DSN) }},
+            COMMIT_SHA: ${{ toJSON(github.sha) }}
+          };
+          EOF
+          echo "env.js generado en dist/frontend/browser/env.js"
+          ls -l dist/frontend/browser/env.js
 
       - name: Deploy via FTP/FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -91,8 +91,8 @@ jobs:
           # PRESERVANDO env.js (si existe en el hosting)
           dangerous-clean-slate: true
           exclude: |
-            env.js
-            **/env.js
+            **/.git*
+            **/.DS_Store
 
       # Alternative SFTP deploy (commented). Uncomment and remove the FTP step above if using SFTP.
       # - name: Deploy via SFTP
