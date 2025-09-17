@@ -65,11 +65,10 @@ jobs:
           # Genera un archivo de runtime config dentro del build estático
           mkdir -p dist/frontend/browser
           cat > dist/frontend/browser/env.js << 'EOF'
-          window.__ENV__ = {
-            OPENAPI_URL: ${{ toJSON(vars.OPENAPI_URL) }},
-            API_URL: ${{ toJSON(vars.API_URL) }},
-            SENTRY_DSN: ${{ toJSON(secrets.SENTRY_DSN) }},
-            COMMIT_SHA: ${{ toJSON(github.sha) }}
+          // Archivo generado por CI en cada deploy (clean-slate)
+          // La app usa window.__env.API_BASE en tiempo de ejecución
+          window.__env = {
+            API_BASE: ${{ toJSON(vars.API_BASE) }}
           };
           EOF
           echo "env.js generado en dist/frontend/browser/env.js"
