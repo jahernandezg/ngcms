@@ -22,4 +22,15 @@ describe('CategoriesService', () => {
     const tree = await service.listTree();
     expect(Array.isArray(tree)).toBe(true);
   });
+
+  it('listAll returns array and uses expected select/order', async () => {
+    const prisma = (service as unknown as { prisma: { category: CategoryDelegateMock } }).prisma;
+    prisma.category.findMany.mockResolvedValueOnce([]);
+    const all = await service.listAll();
+    expect(Array.isArray(all)).toBe(true);
+    expect(prisma.category.findMany).toHaveBeenCalledWith({
+      select: { id: true, name: true, slug: true },
+      orderBy: { name: 'asc' },
+    });
+  });
 });

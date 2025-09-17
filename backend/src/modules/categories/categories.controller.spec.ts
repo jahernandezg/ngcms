@@ -23,4 +23,10 @@ describe('CategoriesController (e2e-light)', () => {
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
   });
+
+  it('/categories (GET)', async () => {
+    const res = await request(app.getHttpServer()).get('/categories');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
 });

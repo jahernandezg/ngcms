@@ -15,6 +15,7 @@ import { ThemesModule } from '../modules/themes/themes.module';
 import { SiteSettingsModule } from '../modules/site-settings/site-settings.module';
 import { BlogConfigModule } from '../modules/blog-config/blog-config.module';
 import { UploadsModule } from '../modules/uploads/uploads.module';
+import { CategoriesModule } from '../modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { UploadsModule } from '../modules/uploads/uploads.module';
   SiteSettingsModule,
   BlogConfigModule,
   UploadsModule,
+  CategoriesModule,
     SearchModule,
   SeoModule,
   AdminModule,

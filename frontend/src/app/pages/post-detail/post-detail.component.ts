@@ -1,3 +1,4 @@
+import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { CommonModule, Location } from '@angular/common';
 import { Component, inject, effect, Input, signal, DestroyRef } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -7,6 +8,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SeoService } from '../../shared/seo.service';
 import { TwindService } from '../../shared/twind.service';
 import { unwrapData } from '../../shared/http-utils';
+import { SiteSettingsService } from '../../shared/site-settings.service';
+import { ShareButtonDirective } from 'ngx-sharebuttons';
+import { SocialLinksComponent } from '../../shared/social-links/social-links.component';
 
 type PostDetail = {
   id: string;
@@ -28,42 +32,8 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[] }
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
-  template: `
-  @if (!loading()) {
-    <section class="container mx-auto p-4">
-      <h1 class="text-3xl font-semibold mb-2">{{ post()?.title }}</h1>
-      <small class="text-text-secondary">Por {{ post()?.author?.name }} · {{ post()?.readingTime }} min</small>
-      <div class="flex flex-wrap gap-2 my-2">
-        @for (c of post()?.categories; track c.id) {
-          <a [routerLink]="['/', c.slug]" class="text-xs px-2 py-1 bg-gray-100 rounded">#{{ c.name }}</a>
-        }
-        @for (t of post()?.tags; track t.id) {
-          <span class="text-xs px-2 py-1 bg-gray-50 rounded">{{ t.name }}</span>
-        }
-      </div>
-  <article class="prose mt-4" [innerHTML]="safeContent()"></article>
-      @if (related()?.length) {
-        <section class="mt-10">
-          <h3 class="text-xl font-semibold mb-2">Relacionados</h3>
-          <ul class="list-disc pl-5">
-            @for (r of related(); track r.id) {
-              <li>
-                <a [routerLink]="['/', r.slug]" class="text-primary underline">{{ r.title }}</a>
-              </li>
-            }
-          </ul>
-        </section>
-      }
-      <nav class="mt-6">
-        <a [attr.href]="backHref" (click)="goBack($event)" class="text-primary underline">Volver</a>
-      </nav>
-    </section>
-    <script type="application/ld+json" [textContent]="jsonLd()"></script>
-  } @else {
-    <p class="p-4">Cargando…</p>
-  }
-  `,
+  imports: [CommonModule, RouterModule, ShareButtonDirective, FontAwesomeModule, SocialLinksComponent],
+  templateUrl: './post-detail.component.html',
 })
 export class PostDetailComponent {
   private route = inject(ActivatedRoute);
@@ -74,6 +44,9 @@ export class PostDetailComponent {
   private destroyRef = inject(DestroyRef);
   private sanitizer = inject(DomSanitizer);
   private twind = inject(TwindService);
+  private siteSettings = inject(SiteSettingsService);
+
+
 
   private _slugInput?: string;
   @Input() set slug(value: string | undefined) {
@@ -88,6 +61,15 @@ export class PostDetailComponent {
   readonly safeContent = signal<SafeHtml | undefined>(undefined);
   readonly related = signal<PostDetail[] | undefined>(undefined);
   readonly loading = signal<boolean>(true);
+  // URL absoluta del post para compartir en redes
+  readonly absoluteUrl = signal<string>('');
+  // Estado al copiar enlace
+  readonly copied = signal<boolean>(false);
+  private copyTimer: ReturnType<typeof setTimeout> | null = null;
+  // Progreso de lectura (0-100) y minutos restantes
+  readonly readingProgress = signal<number>(0);
+  readonly remainingMinutes = signal<number>(0);
+  private readingListenersAttached = false;
 
   private _initial?: Partial<PostDetail> | null;
   @Input() set initial(value: Partial<PostDetail> | null | undefined) {
@@ -122,11 +104,41 @@ export class PostDetailComponent {
   const desc = p.excerpt || this.truncate(p.content, 160);
   this.seo.set({ title: p.title, description: desc, type: 'article', canonical: path });
     });
+    // Inicializar minutos restantes al cargar el post
+    effect(() => {
+      const p = this.post();
+      if (!p) return;
+      this.remainingMinutes.set(Math.max(0, Math.ceil(p.readingTime ?? 0)));
+      // recalcular progreso tras cambios de contenido
+      queueMicrotask(() => this.computeReadingProgress());
+    });
+    // Calcular URL absoluta para compartir
+    effect(() => {
+      // Dependencias reactivas: post y slug
+      const p = this.post();
+      const slug = this.slugSignal();
+      if (!p && !slug) return;
+      try {
+        if (typeof window !== 'undefined' && window.location) {
+          // En navegador usamos la URL actual completa (incluye dominio y path)
+          this.absoluteUrl.set(window.location.href);
+          return;
+        }
+      } catch { /* noop */ }
+      // Fallback SSR: construir con siteUrl (si existe) y la ruta/slug
+      const base = (this.siteSettings.settings()?.siteUrl || '').replace(/\/$/, '');
+      const currentPath = (this.router.url || '').split('?')[0];
+      const path = currentPath && currentPath !== '/' ? currentPath : `/${p?.slug || slug}`;
+      this.absoluteUrl.set(base ? `${base}${path}` : path);
+    });
     // Re-aplicar Twind cuando cambia el contenido seguro
     effect(() => {
       void this.safeContent();
       queueMicrotask(async () => {
         try { await this.twind.applyToContainer(this.getContentRoot()); } catch { /* noop */ }
+        // iniciar/actualizar listeners de lectura y recomputar
+        this.initReadingProgressMonitoring();
+        this.computeReadingProgress();
       });
     });
   }
@@ -135,6 +147,90 @@ export class PostDetailComponent {
     // Si tu template tiene un contenedor específico, preferimos aplicarlo allí; fallback a body
     const el = (document.querySelector('app-post-detail article') as Element | null) ?? undefined;
     return el ?? document.body;
+  }
+
+  // Copiar enlace al portapapeles y mostrar feedback
+  copyLink(ev?: Event) {
+    if (ev) ev.preventDefault();
+    const url = this.absoluteUrl();
+    if (!url) return;
+    const done = () => {
+      // resetear temporizador previo si existe
+      if (this.copyTimer) { clearTimeout(this.copyTimer); this.copyTimer = null; }
+      this.copied.set(true);
+      this.copyTimer = setTimeout(() => {
+        this.copied.set(false);
+        this.copyTimer = null;
+      }, 2000);
+      // limpiar al destruir para no filtrar timers
+      this.destroyRef.onDestroy(() => {
+        if (this.copyTimer) clearTimeout(this.copyTimer);
+      });
+    };
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        void navigator.clipboard.writeText(url).then(done).catch(() => this.fallbackCopy(url, done));
+      } else {
+        this.fallbackCopy(url, done);
+      }
+    } catch {
+      this.fallbackCopy(url, done);
+    }
+  }
+
+  private fallbackCopy(text: string, onFinish: () => void) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '0';
+      ta.style.left = '0';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      onFinish();
+    } catch {
+      // si falla, no hacemos nada más
+    }
+  }
+
+  private initReadingProgressMonitoring() {
+    if (this.readingListenersAttached) return;
+    if (typeof window === 'undefined') return;
+    const onScrollOrResize = () => this.computeReadingProgress();
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+    this.readingListenersAttached = true;
+    this.destroyRef.onDestroy(() => {
+      window.removeEventListener('scroll', onScrollOrResize);
+      window.removeEventListener('resize', onScrollOrResize);
+    });
+  }
+
+  private computeReadingProgress() {
+    try {
+      const article = document.querySelector('app-post-detail article') as HTMLElement | null;
+      if (!article) return;
+      const start = article.offsetTop;
+      const end = start + article.offsetHeight - window.innerHeight;
+      const current = window.scrollY;
+      let pct = 0;
+      if (end > start) {
+        pct = ((current - start) / (end - start)) * 100;
+      } else {
+        // artículo más corto que el viewport
+        pct = current >= start ? 100 : 0;
+      }
+      pct = Math.max(0, Math.min(100, pct));
+      this.readingProgress.set(Math.round(pct));
+      const total = this.post()?.readingTime ?? 0;
+      const remaining = Math.max(0, Math.ceil(total * (1 - pct / 100)));
+      this.remainingMinutes.set(remaining);
+    } catch { /* noop */ }
   }
 
   private fetchPost(slugOrId: string) {
@@ -227,5 +323,32 @@ export class PostDetailComponent {
     const cut = s.slice(0, max);
     const lastSpace = cut.lastIndexOf(' ');
     return (lastSpace > 40 ? cut.slice(0, lastSpace) : cut) + '…';
+  }
+
+  getPostImage(): string {
+    return this.siteSettings.settings()?.defaultPostImage || 'https://placehold.co/800x400?text=800x400\n+No+Image';
+  }
+
+  getAuthorInitials(name: string): string {
+    if (!name) return '?';
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
+  }
+
+  getTagClasses(index: number): string {
+    const colors = [
+      'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+      'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+      'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+      'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+      'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+      'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300',
+      'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300',
+      'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
+    ];
+    return colors[index % colors.length] + ' px-3 py-1 rounded-full text-sm';
   }
 }

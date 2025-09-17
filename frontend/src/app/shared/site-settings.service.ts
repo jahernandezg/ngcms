@@ -17,6 +17,11 @@ export interface SiteSettingsPublic {
   ogImage?: string | null;
   defaultPostImage?: string | null;
   analyticsId?: string | null;
+  contactEmail?: string | null;
+  socialTwitter?: string | null;
+  socialLinkedIn?: string | null;
+  socialGithub?: string | null;
+  socialInstagram?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -44,6 +49,11 @@ export class SiteSettingsService {
           logoLight?: string | null; logoDark?: string | null; favicon?: string | null; ogImage?: string | null; defaultPostImage?: string | null;
           metaDescription?: string | null;
           analyticsId?: string | null;
+          contactEmail?: string | null;
+          socialTwitter?: string | null;
+          socialLinkedIn?: string | null;
+          socialGithub?: string | null;
+          socialInstagram?: string | null;
     };
     const cfg = unwrapData<BlogConfigPublic>(s as ApiEnvelope<BlogConfigPublic>);
         const mapped: SiteSettingsPublic = {
@@ -59,6 +69,11 @@ export class SiteSettingsService {
           ogImage: cfg.ogImage ?? null,
           defaultPostImage: cfg.defaultPostImage ?? null,
           analyticsId: cfg.analyticsId ?? null,
+          contactEmail: cfg.contactEmail ?? null,
+          socialTwitter: cfg.socialTwitter ?? null,
+          socialLinkedIn: cfg.socialLinkedIn ?? null,
+          socialGithub: cfg.socialGithub ?? null,
+          socialInstagram: cfg.socialInstagram ?? null,
         };
         this.settingsSig.set(mapped); this.fetched = true; this.loadingSig.set(false);
       },

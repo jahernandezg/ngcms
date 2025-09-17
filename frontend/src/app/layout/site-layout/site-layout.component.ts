@@ -5,12 +5,13 @@ import { MainNavComponent } from '../main-nav/main-nav.component';
 import { ThemeService } from '../../shared/theme.service';
 import { SiteSettingsService } from '../../shared/site-settings.service';
 import { buildAssetUrl } from '../../shared/asset-url.util';
+import { SocialLinksComponent } from "../../shared/social-links/social-links.component";
 
 
 @Component({
   standalone: true,
   selector: 'app-site-layout',
-  imports: [CommonModule, RouterModule, MainNavComponent],
+  imports: [CommonModule, RouterModule, MainNavComponent, SocialLinksComponent],
   styleUrls: ['./site-layout.component.css'],
   templateUrl: './site-layout.component.html',
 })

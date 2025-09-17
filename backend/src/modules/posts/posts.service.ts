@@ -58,15 +58,17 @@ export class PostsService {
           publishedAt: true,
           author: { select: { id: true, name: true } },
           categories: { select: { category: { select: { id: true, name: true, slug: true } } } },
+          tags: { select: { tag: { select: { id: true, name: true, slug: true } } } },
         },
       }),
   this.prisma.post.count({ where: { status: PostStatus.PUBLISHED } }),
     ]);
 
-    // map categories relation to flat array
+    // map categories and tags relations to flat arrays
     const normalized = items.map((p) => ({
       ...p,
-      categories: p.categories.map((c) => c.category),
+      categories: (p.categories ?? []).map((c) => c.category),
+      tags: (p.tags ?? []).map((t) => t.tag),
     }));
   const result = { items: normalized, total, page, limit };
   if (!opts?.skipCache) this.setCache(key, result);
@@ -96,11 +98,16 @@ export class PostsService {
           publishedAt: true,
           author: { select: { id: true, name: true, slug: true } },
           categories: { select: { category: { select: { id: true, name: true, slug: true } } } },
+          tags: { select: { tag: { select: { id: true, name: true, slug: true } } } },
         },
       }),
       this.prisma.post.count({ where }),
     ]);
-    const normalized = items.map((p) => ({ ...p, categories: p.categories.map((c) => c.category) }));
+    const normalized = items.map((p) => ({
+      ...p,
+      categories: (p.categories ?? []).map((c) => c.category),
+      tags: (p.tags ?? []).map((t) => t.tag),
+    }));
     const result = { items: normalized, total, page, limit };
     this.setCache(key, result);
     return result;
@@ -152,6 +159,7 @@ export class PostsService {
           publishedAt: true,
           author: { select: { id: true, name: true } },
           categories: { select: { category: { select: { id: true, name: true, slug: true } } } },
+          tags: { select: { tag: { select: { id: true, name: true, slug: true } } } },
         },
       }),
       this.prisma.post.count({
@@ -164,7 +172,8 @@ export class PostsService {
 
     const normalized = items.map((p) => ({
       ...p,
-      categories: p.categories.map((c) => c.category),
+      categories: (p.categories ?? []).map((c) => c.category),
+      tags: (p.tags ?? []).map((t) => t.tag),
     }));
   const result = { items: normalized, total, page, limit };
   this.setCache(key, result);
@@ -196,6 +205,7 @@ export class PostsService {
           publishedAt: true,
           author: { select: { id: true, name: true } },
           categories: { select: { category: { select: { id: true, name: true, slug: true } } } },
+          tags: { select: { tag: { select: { id: true, name: true, slug: true } } } },
         },
       }),
       this.prisma.post.count({
@@ -204,7 +214,8 @@ export class PostsService {
     ]);
     const normalized = items.map((p) => ({
       ...p,
-      categories: p.categories.map((c) => c.category),
+      categories: (p.categories ?? []).map((c) => c.category),
+      tags: (p.tags ?? []).map((t) => t.tag),
     }));
   const result = { items: normalized, total, page, limit };
   this.setCache(key, result);
@@ -224,8 +235,8 @@ export class PostsService {
       },
     });
     if (!base) return [];
-    const catIds = base.categories.map((c) => c.categoryId);
-    const tagIds = base.tags.map((t) => t.tagId);
+  const catIds = (base.categories ?? []).map((c) => c.categoryId);
+  const tagIds = (base.tags ?? []).map((t) => t.tagId);
 
     const candidates = await this.prisma.post.findMany({
       where: {
@@ -251,15 +262,15 @@ export class PostsService {
 
     // Rank by number of shared tags/categories
     const scored = candidates.map((p) => {
-      const pCatIds = p.categories.map((c) => c.category.id);
-      const pTagIds = p.tags.map((t) => t.tag.id);
+      const pCatIds = (p.categories ?? []).map((c) => c.category.id);
+      const pTagIds = (p.tags ?? []).map((t) => t.tag.id);
       const sharedCats = pCatIds.filter((id) => catIds.includes(id)).length;
       const sharedTags = pTagIds.filter((id) => tagIds.includes(id)).length;
       const score = sharedCats * 2 + sharedTags; // weight categories a bit higher
       return {
         ...p,
-        categories: p.categories.map((c) => c.category),
-        tags: p.tags.map((t) => t.tag),
+        categories: (p.categories ?? []).map((c) => c.category),
+        tags: (p.tags ?? []).map((t) => t.tag),
         score,
       };
     });
@@ -306,8 +317,8 @@ export class PostsService {
     if (updated.status !== PostStatus.PUBLISHED) return null;
 
     // Normaliza categorías/tags
-  const categories = updated.categories.map((c) => c.category);
-  const tags = updated.tags.map((t) => t.tag);
+  const categories = (updated.categories ?? []).map((c) => c.category);
+  const tags = (updated.tags ?? []).map((t) => t.tag);
   const result = {
       id: updated.id,
       title: updated.title,
