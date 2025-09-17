@@ -1,0 +1,256 @@
+@if (!loading()) {
+  <!-- Breadcrumb -->
+  <nav class="pt-20 pb-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <ol class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+        <li>
+          <a href="/" class="hover:text-gray-900 dark:hover:text-white transition-colors">Inicio</a>
+        </li>
+        <li>
+          <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+        </li>
+        <li>
+          <a href="/blog" class="hover:text-gray-900 dark:hover:text-white transition-colors">Blog</a>
+        </li>
+        <li>
+          <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+        </li>
+        <li>
+          <span class="text-blue-600 dark:text-blue-400 font-medium">{{ post()?.categories?.[0]?.name || 'Categoría' }}</span>
+        </li>
+      </ol>
+    </div>
+  </nav>
+
+
+
+  <!-- Article Header -->
+  <header class="py-8 bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900 transition-colors duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
+      <!-- Category Badge -->
+      <div class="flex items-center space-x-3 mb-6">
+        @for (c of post()?.categories; track c.id) {
+          <span class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-4 py-2 rounded-full text-sm font-medium">{{ c.name }}</span>
+        }
+        <span class="text-gray-500 dark:text-gray-400 text-sm">•</span>
+        <time [attr.datetime]="post()?.publishedAt" class="text-gray-600 dark:text-gray-400 text-sm">
+          {{ post()?.publishedAt | date:'d \'de\' MMMM, y' }}
+        </time>
+        <span class="text-gray-500 dark:text-gray-400 text-sm">•</span>
+        <span class="text-gray-600 dark:text-gray-400 text-sm flex items-center space-x-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>{{ post()?.readingTime }} min de lectura</span>
+        </span>
+      </div>
+
+      <!-- Title -->
+      <h1 class="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+        {{ post()?.title }}
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+        {{ post()?.excerpt }}
+      </p>
+
+
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="bg-white dark:bg-gray-900 transition-colors duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+
+        <!-- Article Content -->
+        <article class="lg:col-span-8">
+          <!-- Featured Image -->
+          <div class="my-12">
+            <img [src]="getPostImage()"
+                 alt="Post image"
+                 class="w-full h-96 object-cover rounded-2xl shadow-lg">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-3 text-center">
+              Imagen destacada del artículo
+            </p>
+          </div>
+
+          <!-- Table of Contents -->
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 mb-12 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+              </svg>
+              Contenido del Artículo
+            </h2>
+            <nav class="toc">
+              <ul class="space-y-2 text-sm">
+                <li><a href="#introduccion" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">1. Introducción a Signals</a></li>
+                <li><a href="#que-son-signals" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">2. ¿Qué son los Signals?</a></li>
+                <li><a href="#signals-vs-rxjs" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">3. Signals vs RxJS</a></li>
+                <li><a href="#implementacion-practica" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">4. Implementación Práctica</a></li>
+                <li><a href="#casos-uso" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">5. Casos de Uso Comunes</a></li>
+                <li><a href="#mejores-practicas" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">6. Mejores Prácticas</a></li>
+                <li><a href="#performance" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">7. Optimización de Performance</a></li>
+                <li><a href="#conclusion" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">8. Conclusión</a></li>
+              </ul>
+            </nav>
+          </div>
+
+          <!-- Article Content -->
+          <div class="prose prose-lg prose-gray dark:prose-invert max-w-none">
+            <div [innerHTML]="safeContent()"></div>
+
+            <!-- Tags -->
+            <div class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tags</h3>
+              <div class="flex flex-wrap gap-2">
+                @for (t of post()?.tags; track t.id) {
+                  <span [ngClass]="getTagClasses($index)">{{ t.name }}</span>
+                }
+                <!--<span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-sm">Angular 20</span>
+                <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full text-sm">Estado Reactivo</span>
+                <span class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-sm">Performance</span>
+                <span class="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-3 py-1 rounded-full text-sm">TypeScript</span>
+                <span class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm">Frontend</span>-->
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Sidebar -->
+        <aside class="lg:col-span-4">
+          <!-- Sticky Sidebar -->
+          <div class="sticky top-24 space-y-8">
+
+            <!-- Progress Reading Bar -->
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Progreso de Lectura</h3>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div id="reading-progress" class="bg-blue-600 h-2 rounded-full transition-all duration-300" [style.width.%]="readingProgress()"></div>
+              </div>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                <span id="reading-time">{{ remainingMinutes() }} min restantes</span>
+              </p>
+            </div>
+
+            <!-- Author Info -->
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6">
+              <div class="flex items-center space-x-4 mb-4">
+                <div class="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-xl">
+                  {{ getAuthorInitials(post()?.author?.name || '') }}
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white">{{ post()?.author?.name }}</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400"> Senior FullStack Developer</p>
+                </div>
+              </div>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {{ post()?.author?.bio }}
+              </p>
+              <app-social-links />
+            </div>
+
+            <!-- Share Article -->
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Compartir Artículo</h3>
+              <div class="space-y-3">
+                <button shareButton="x"
+                [url]="absoluteUrl()"
+                [description]="post()?.title || ''"
+                class="share-btn w-full flex items-center justify-center space-x-3 bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-xl transition-colors" data-platform="twitter">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 448 512">
+                    <path d="M357.2 48L427.8 48 273.6 224.2 455 464 313 464 201.7 318.6 74.5 464 3.8 464 168.7 275.5-5.2 48 140.4 48 240.9 180.9 357.2 48zM332.4 421.8l39.1 0-252.4-333.8-42 0 255.3 333.8z"/>
+                  </svg>
+                  <span>Compartir en X</span>
+                </button>
+
+                <button shareButton="linkedin" [url]="absoluteUrl()" class="share-btn w-full flex items-center justify-center space-x-3 bg-blue-700 hover:bg-blue-800 text-white px-4 py-3 rounded-xl transition-colors" data-platform="linkedin">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                  <span>Compartir en LinkedIn</span>
+                </button>
+
+                <button shareButton="whatsapp" [url]="absoluteUrl()" class="share-btn w-full flex items-center justify-center space-x-3 bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-xl transition-colors" data-platform="whatsapp">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+                  </svg>
+                  <span>Compartir en WhatsApp</span>
+                </button>
+
+                <button id="copy-link"
+                        (click)="copyLink($event)"
+                        class="w-full flex items-center justify-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200"
+                        [ngClass]="copied() ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white'">
+                  <svg class="w-5 h-5 transition-transform duration-200" [ngClass]="copied() ? 'scale-110' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path *ngIf="!copied()" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    <path *ngIf="copied()" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span class="transition-opacity duration-200" [ngClass]="copied() ? 'opacity-100' : 'opacity-100'">{{ copied() ? 'Copiado' : 'Copiar Enlace' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Related Articles -->
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Artículos Relacionados</h3>
+              <div class="space-y-4">
+                @for (r of related(); track r.id) {
+                  <a [routerLink]="['/', r.slug]" class="block group">
+                    <div class="flex space-x-3">
+                      <img [src]="getPostImage()"
+                           alt="{{ r.title }}"
+                           class="w-16 h-16 rounded-lg object-cover">
+                      <div class="flex-1">
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                          {{ r.title }}
+                        </h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Hace {{ r.publishedAt | date:'d' }} días</p>
+                      </div>
+                    </div>
+                  </a>
+                }
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <!-- Newsletter CTA -->
+  <section class="py-16 bg-gradient-to-br from-blue-50 via-purple-50 to-gray-50 dark:from-blue-900 dark:via-purple-900 dark:to-gray-900 transition-colors duration-300">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div class="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200 dark:border-gray-600 rounded-3xl p-8">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          ¿Te gustó este artículo?
+        </h2>
+
+        <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
+          Suscríbete al newsletter y recibe más contenido sobre Angular, NestJS y desarrollo moderno.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+          <input
+            type="email"
+            placeholder="tu@email.com"
+            class="flex-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+          <button class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap">
+            Suscribirme
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script type="application/ld+json" [textContent]="jsonLd()"></script>
+} @else {
+  <p class="p-4">Cargando…</p>
+}
