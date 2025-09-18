@@ -76,6 +76,7 @@ export class AdminPostsService {
       slug: r.slug,
       status: r.status,
       updatedAt: r.updatedAt,
+      featuredImage: r.featuredImage,
       categories: r.categories.map(c => c.category),
       tags: r.tags.map(t => t.tag)
     }));
@@ -88,7 +89,7 @@ export class AdminPostsService {
     return post;
   }
 
-  async create(userId: string, data: { title: string; content: string; status: PostStatus; excerpt?: string; categories?: string[]; tags?: string[] }) {
+  async create(userId: string, data: { title: string; content: string; status: PostStatus; excerpt?: string; categories?: string[]; tags?: string[]; featuredImage?: string }) {
     const safeContent = sanitizeContent(data.content);
     const safeExcerpt = data.excerpt ? sanitizeExcerpt(data.excerpt) : undefined;
   const slugBase = data.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -103,6 +104,7 @@ export class AdminPostsService {
         authorId: userId,
         readingTime: Math.max(1, Math.round(safeContent.split(/\s+/).length / 200)),
         version: 1,
+        ...(data.featuredImage ? { featuredImage: data.featuredImage } : {}),
         categories: data.categories && data.categories.length ? {
           create: data.categories.map(slug => ({ category: { connect: { slug } } }))
         } : undefined,
@@ -115,14 +117,16 @@ export class AdminPostsService {
     return created;
   }
 
-  async update(id: string, userId: string, data: { title?: string; content?: string; status?: PostStatus; excerpt?: string; categories?: string[]; tags?: string[] }) {
-    const existing = await this.prisma.post.findUnique({ where: { id } });
+  async update(id: string, userId: string, data: { title?: string; content?: string; status?: PostStatus; excerpt?: string; categories?: string[]; tags?: string[]; featuredImage?: string | null }) {
+  const existing = await this.prisma.post.findUnique({ where: { id }, select: { id: true, authorId: true, version: true, featuredImage: true } });
     if (!existing) throw new NotFoundException();
     const actor = await this.prisma.user.findUnique({ where: { id: userId }, select: { roles: true } });
     const isAdmin = actor?.roles.includes('ADMIN');
     if (!isAdmin && existing.authorId !== userId) throw new ForbiddenException();
   const safeContent = data.content ? sanitizeContent(data.content) : undefined;
   const safeExcerpt = data.excerpt ? sanitizeExcerpt(data.excerpt) : undefined;
+    const replacingImage = data.featuredImage !== undefined && data.featuredImage !== existing.featuredImage;
+    const oldImage = replacingImage ? existing.featuredImage : null;
     const updated = await this.prisma.post.update({
       where: { id },
       data: {
@@ -133,10 +137,22 @@ export class AdminPostsService {
         lastEditedBy: userId,
         lastEditedAt: new Date(),
         version: existing.version + 1,
+        ...(data.featuredImage !== undefined ? { featuredImage: data.featuredImage } : {}),
         ...(data.categories ? { categories: { deleteMany: {}, create: data.categories.map(slug => ({ category: { connect: { slug } } })) } } : {}),
         ...(data.tags ? { tags: { deleteMany: {}, create: data.tags.map(slug => ({ tag: { connect: { slug } } })) } } : {})
       }
     });
+    // Nota: Estrategia simple de cleanup: si se reemplaza imagen y la anterior es del dominio local /uploads/ eliminamos el archivo.
+    if (oldImage && oldImage.startsWith('/uploads/')) {
+      // best-effort, no bloquear respuesta si falla
+      const localPath = oldImage.replace(/^\/uploads\//,'');
+      import('path').then(path => {
+        import('fs/promises').then(fs => {
+          const p = path.join(process.cwd(), 'uploads', localPath);
+          fs.unlink(p).catch(()=>undefined);
+        });
+      });
+    }
     await this.audit.log({ userId, action: 'UPDATE', resource: 'Post', resourceId: id });
     return updated;
   }

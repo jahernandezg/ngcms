@@ -5,15 +5,17 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 // import { ToastService } from '../components/toast-container.component';
 import { AlertComponent } from '../components/alert.component';
+import { PostImageUploadComponent } from './image-upload.component';
+import { PostImagePreviewComponent } from './image-preview.component';
 import type { ApiResponse } from '@cms-workspace/shared-types';
 
-interface PostEntity { id: string; title: string; excerpt?: string; content: string; status: string; categories?: { slug: string }[]; tags?: { slug: string }[] }
+interface PostEntity { id: string; title: string; excerpt?: string; content: string; status: string; featuredImage?: string; categories?: { slug: string }[]; tags?: { slug: string }[] }
 interface TaxonomyItem { id: string; name: string; slug: string }
 
 @Component({
   standalone: true,
   selector: 'app-post-editor',
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, AlertComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, AlertComponent, PostImageUploadComponent, PostImagePreviewComponent],
   // styles moved to global styles to respect build budgets
   templateUrl: './post-editor.component.html',
 })
@@ -33,6 +35,10 @@ export class PostEditorComponent implements OnDestroy {
   tags = signal<TaxonomyItem[]>([]);
   selectedCategories = signal<string[]>([]);
   selectedTags = signal<string[]>([]);
+  featuredImageUrl = signal<string | null>(null);
+  pendingImageFile: File | null = null;
+  uploadingImage = signal(false);
+  uploadError = signal<string | null>(null);
 
   form = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
@@ -80,6 +86,7 @@ export class PostEditorComponent implements OnDestroy {
           .filter((s): s is string => typeof s === 'string' && !!s);
         this.selectedCategories.set(catSlugs);
         this.selectedTags.set(tagSlugs);
+        this.featuredImageUrl.set(p.featuredImage || null);
       }
       this.loadTaxonomy();
     });
@@ -99,29 +106,56 @@ export class PostEditorComponent implements OnDestroy {
     this.selectedTags.set(Array.from(cur));
   }
 
+  private uploadFeaturedIfNeeded(): Promise<string | null> {
+    if (!this.pendingImageFile) return Promise.resolve(this.featuredImageUrl());
+    this.uploadingImage.set(true); this.uploadError.set(null);
+    const formData = new FormData();
+    formData.append('file', this.pendingImageFile);
+    interface UploadResp { success?: boolean; data?: { url?: string }; url?: string }
+    return new Promise((resolve) => {
+      this.http.post<UploadResp>(`/api/admin/uploads/post-image/single`, formData)
+        .subscribe({
+          next: (r) => {
+            this.uploadingImage.set(false);
+            const url = r.data?.url || r.url;
+            if (url) { this.featuredImageUrl.set(url); this.pendingImageFile = null; resolve(url); }
+            else { this.uploadError.set('Respuesta de upload inválida'); resolve(null); }
+          },
+          error: () => { this.uploadingImage.set(false); this.uploadError.set('Error subiendo imagen'); resolve(null); }
+        });
+    });
+  }
+
   save(status?: string) {
     if (this.form.invalid) return;
     this.saving.set(true);
   this.error.set(null);
   this.success.set(null);
-  const payload = { ...this.form.getRawValue(), status: status || 'DRAFT', categories: this.selectedCategories(), tags: this.selectedTags() };
-    let req;
-    if (this.isNew()) req = this.http.post<ApiResponse<PostEntity>>('/api/admin/posts', payload);
-    else req = this.http.put<ApiResponse<PostEntity>>(`/api/admin/posts/${this.id()}`, payload);
-    req.subscribe({
-      next: r => {
-        this.saving.set(false);
-        if (r.success) {
-          if (this.isNew()) {
-            this.router.navigate(['/admin/posts', (r.data).id], { state: { flash: 'created' } });
-          } else {
-      this.success.set('Post actualizado');
-            this.startAutoHideSuccess();
-          }
-        } else { this.error.set(r.message || 'Error'); }
-      },
-      error: () => { this.saving.set(false); this.error.set('Error al guardar'); }
+    this.uploadFeaturedIfNeeded().then((imgUrl) => {
+      const payload = { ...this.form.getRawValue(), status: status || 'DRAFT', categories: this.selectedCategories(), tags: this.selectedTags(), ...(imgUrl ? { featuredImage: imgUrl } : {}) };
+      let req;
+      if (this.isNew()) req = this.http.post<ApiResponse<PostEntity>>('/api/admin/posts', payload);
+      else req = this.http.put<ApiResponse<PostEntity>>(`/api/admin/posts/${this.id()}`, payload);
+      req.subscribe({
+        next: r => {
+          this.saving.set(false);
+          if (r.success) {
+            if (this.isNew()) {
+              this.router.navigate(['/admin/posts', (r.data).id], { state: { flash: 'created' } });
+            } else {
+        this.success.set('Post actualizado');
+              this.startAutoHideSuccess();
+            }
+          } else { this.error.set(r.message || 'Error'); }
+        },
+        error: () => { this.saving.set(false); this.error.set('Error al guardar'); }
+      });
     });
+  }
+
+  onImageSelected(file: File | null) {
+    this.pendingImageFile = file;
+    if (!file && !this.featuredImageUrl()) this.featuredImageUrl.set(null);
   }
 
   private startAutoHideSuccess() {

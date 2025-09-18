@@ -11,6 +11,8 @@ import { unwrapData } from '../../shared/http-utils';
 import { SiteSettingsService } from '../../shared/site-settings.service';
 import { ShareButtonDirective } from 'ngx-sharebuttons';
 import { SocialLinksComponent } from '../../shared/social-links/social-links.component';
+import { PostImageComponent } from '../../shared/post-image.component';
+import { buildAssetUrl } from '../../shared/asset-url.util';
 
 type PostDetail = {
   id: string;
@@ -24,6 +26,7 @@ type PostDetail = {
   author: { id: string; name: string; avatarUrl?: string | null; bio?: string | null };
   categories: { id: string; name: string; slug: string }[];
   tags: { id: string; name: string; slug: string }[];
+  featuredImage?: string | null;
 };
 
 interface ApiEnvelope<T> { success: boolean; message?: string; data: T }
@@ -32,7 +35,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[] }
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, ShareButtonDirective, FontAwesomeModule, SocialLinksComponent],
+  imports: [CommonModule, RouterModule, ShareButtonDirective, FontAwesomeModule, SocialLinksComponent, PostImageComponent],
   templateUrl: './post-detail.component.html',
 })
 export class PostDetailComponent {
@@ -96,13 +99,16 @@ export class PostDetailComponent {
   this.fetchPost(s);
   this.fetchRelated(s);
     });
-    // SEO
+    // SEO (incluye imagen priorizando featuredImage)
     effect(() => {
       const p = this.post();
       if (!p) return;
       const path = typeof window !== 'undefined' ? window.location.pathname : `/${p.slug}`;
-  const desc = p.excerpt || this.truncate(p.content, 160);
-  this.seo.set({ title: p.title, description: desc, type: 'article', canonical: path });
+      const desc = p.excerpt || this.truncate(p.content, 160);
+      const settings = this.siteSettings.settings();
+  const rawImage = p.featuredImage || settings?.defaultPostImage || settings?.ogImage || undefined;
+  const image = buildAssetUrl(rawImage || null) || undefined;
+  this.seo.set({ title: p.title, description: desc, type: 'article', canonical: path, image });
     });
     // Inicializar minutos restantes al cargar el post
     effect(() => {
@@ -326,7 +332,8 @@ export class PostDetailComponent {
   }
 
   getPostImage(): string {
-    return this.siteSettings.settings()?.defaultPostImage || 'https://placehold.co/800x400?text=800x400\n+No+Image';
+    const p = this.post() as (ReturnType<typeof this.post> & { featuredImage?: string }) | null;
+    return p?.featuredImage || this.siteSettings.settings()?.defaultPostImage || this.siteSettings.settings()?.ogImage || 'https://placehold.co/800x450?text=Sin+Imagen';
   }
 
   getAuthorInitials(name: string): string {

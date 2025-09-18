@@ -54,6 +54,9 @@ export class PostListItemDto {
 
   @ApiProperty({ type: CategoryDto, isArray: true })
   categories!: CategoryDto[];
+
+  @ApiProperty({ required: false, nullable: true, description: 'Imagen destacada del post (URL absoluta o ruta /uploads/...)' })
+  featuredImage?: string | null;
 }
 
 export class PostDetailDto extends PostListItemDto {

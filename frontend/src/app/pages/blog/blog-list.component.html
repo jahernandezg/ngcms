@@ -113,7 +113,10 @@
           @for (post of visiblePosts()!; track post.id) {
             <article class="article-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300 group shadow-sm dark:shadow-none" [attr.data-category]="categoriesAttr(post)">
               <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 overflow-hidden">
-                <img [src]="getPostImage()" alt="Post image" class="w-full h-full object-cover">
+                <app-post-image
+                  [src]="post.featuredImage"
+                  [alt]="post.title || 'Imagen del artículo'"
+                ></app-post-image>
                 <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                 <div class="absolute top-4 left-4" *ngIf="post.categories?.length">
                   <span class="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">{{ post.categories?.[0]?.name }}</span>

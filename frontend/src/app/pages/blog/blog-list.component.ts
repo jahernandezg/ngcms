@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { unwrapData } from '../../shared/http-utils';
 import { SeoService } from '../../shared/seo.service';
 import { SiteSettingsService } from '../../shared/site-settings.service';
+import { PostImageComponent } from '../../shared/post-image.component';
 
 interface PostListItem {
   id: string;
@@ -16,6 +17,7 @@ interface PostListItem {
   author?: { id: string; name: string };
   categories?: { id?: string; name?: string; slug?: string }[];
   tags?: { id?: string; name?: string; slug?: string }[];
+  featuredImage?: string | null; // nuevo campo
 }
 interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[]; meta?: { total: number; page: number; limit: number; totalPages?: number } }
 interface Category { id: string; name: string; slug: string }
@@ -24,7 +26,7 @@ interface CategoryTree extends Category { children?: CategoryTree[] }
 @Component({
   selector: 'app-blog-list',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, PostImageComponent],
   templateUrl: './blog-list.component.html',
 })
 export class BlogListComponent implements OnChanges, OnInit {

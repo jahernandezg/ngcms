@@ -1,6 +1,16 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import {
+  POST_IMAGE_MAX_SIZE,
+  POST_IMAGE_COMPRESSION_THRESHOLD,
+  POST_IMAGE_MAX_WIDTH,
+  POST_IMAGE_MAX_HEIGHT,
+  POST_IMAGE_QUALITY,
+  POST_IMAGE_FORMATS,
+  REQUIRED_ASPECT_RATIO,
+  ASPECT_RATIO_TOLERANCE,
+} from '../../config/post-image.config';
 type MulterFile = { buffer: Buffer; originalname: string; mimetype: string };
 
 export type UploadType = 'logo-light' | 'logo-dark' | 'favicon' | 'og-image' | 'post-image';
@@ -111,6 +121,84 @@ export class UploadsService {
 
     const publicUrl = `/uploads/${type}/${name}`;
     return { url: publicUrl, path: full };
+  }
+
+  /**
+   * Manejo especializado para imágenes principales de posts.
+   * - Valida mime y tamaño (<=5MB)
+   * - Valida aspect ratio 16:9 ±2%
+   * - Redimensiona máximo 1920x1080 manteniendo proporción
+   * - Comprime si supera 2MB
+   * - Genera nombre único con timestamp y hash aleatorio
+   * - Devuelve metadatos (dimensiones, aspectRatio, compressed)
+   */
+  async handlePostImageUpload(file: MulterFile) {
+    if (!file) throw new BadRequestException('Archivo requerido');
+    if (!POST_IMAGE_FORMATS.includes(file.mimetype as (typeof POST_IMAGE_FORMATS)[number])) {
+      throw new BadRequestException('Formato no soportado. Usa JPG, PNG o WebP');
+    }
+    const sizeBytes = (file as unknown as { size?: number }).size ?? file.buffer?.length ?? 0;
+    if (sizeBytes > POST_IMAGE_MAX_SIZE) {
+      throw new BadRequestException('Archivo excede 5MB');
+    }
+
+    // Cargar sharp y extraer metadata
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sharpMod: any = await import('sharp');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sharp: any = sharpMod.default || sharpMod;
+    const img = sharp(file.buffer, { failOn: 'truncated' });
+    const meta = await img.metadata();
+    const w = meta.width || 0;
+    const h = meta.height || 0;
+    if (!w || !h) throw new BadRequestException('No se pudieron leer las dimensiones de la imagen');
+    const ratio = w / h;
+    const min = REQUIRED_ASPECT_RATIO * (1 - ASPECT_RATIO_TOLERANCE);
+    const max = REQUIRED_ASPECT_RATIO * (1 + ASPECT_RATIO_TOLERANCE);
+    if (ratio < min || ratio > max) {
+      throw new BadRequestException(`Aspect ratio inválido. Se requiere 16:9 ±${ASPECT_RATIO_TOLERANCE * 100}%. Actual ${(ratio).toFixed(3)}`);
+    }
+
+    const dir = await this.ensureTypeDir('post-image');
+    const ext = this.pickExt(file.mimetype, file.originalname) || '.webp';
+    const baseName = `post-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
+    const filename = `${baseName}${ext}`;
+    const full = path.join(dir, filename);
+
+    const targetW = Math.min(w, POST_IMAGE_MAX_WIDTH);
+    const targetH = Math.min(h, POST_IMAGE_MAX_HEIGHT);
+    const needsResize = w > targetW || h > targetH;
+    const needsCompression = sizeBytes > POST_IMAGE_COMPRESSION_THRESHOLD;
+
+    let pipeline = img;
+    if (needsResize) {
+      pipeline = pipeline.resize(targetW, targetH, { fit: 'inside', withoutEnlargement: true });
+    }
+
+    if (file.mimetype === 'image/png') {
+      pipeline = pipeline.png({ compressionLevel: needsCompression ? 9 : 6, adaptiveFiltering: true, palette: needsCompression });
+    } else if (file.mimetype === 'image/jpeg') {
+      pipeline = pipeline.jpeg({ quality: needsCompression ? POST_IMAGE_QUALITY - 5 : POST_IMAGE_QUALITY, mozjpeg: true, progressive: true });
+    } else {
+      pipeline = pipeline.webp({ quality: POST_IMAGE_QUALITY });
+    }
+
+    await pipeline.toFile(full);
+    const finalMeta = await sharp(full).metadata();
+    const finalW = finalMeta.width || targetW;
+    const finalH = finalMeta.height || targetH;
+    const publicUrl = `/uploads/post-image/${filename}`;
+    return {
+      success: true,
+      data: {
+        url: publicUrl,
+        filename,
+        originalName: file.originalname,
+        size: (await fs.stat(full)).size,
+        dimensions: { width: finalW, height: finalH, aspectRatio: Number((finalW / finalH).toFixed(3)) },
+        compressed: needsCompression || needsResize,
+      },
+    };
   }
 
   async deleteFile(type: UploadType, filename: string) {

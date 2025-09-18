@@ -71,6 +71,7 @@ model Post {
   lastEditedBy String?
   lastEditedAt DateTime?
   version      Int            @default(1)
+  featuredImage String?
   categories   PostCategory[]
   tags         PostTag[]
   createdAt    DateTime       @default(now())

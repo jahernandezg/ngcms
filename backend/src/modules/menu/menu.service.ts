@@ -137,7 +137,7 @@ export class MenuService {
     if (bestMatch) {
       // leftover segments -> assume post slug last
       const postSlug = segments[segments.length - 1];
-      const post = await this.prisma.post.findFirst({ where: { slug: postSlug, status: 'PUBLISHED' }, select: { id: true, slug: true, title: true, excerpt: true, content: true, readingTime: true, publishedAt: true } });
+  const post = await this.prisma.post.findFirst({ where: { slug: postSlug, status: 'PUBLISHED' }, select: { id: true, slug: true, title: true, excerpt: true, featuredImage: true, content: true, readingTime: true, publishedAt: true } });
       if (post) {
         return { type: 'post', payload: post, context: { baseType: bestMatch.item.type } };
       }
@@ -152,7 +152,7 @@ export class MenuService {
     if (page) return { type: 'page', payload: page };
     const category = await this.prisma.category.findFirst({ where: { slug: segments[segments.length - 1] }, select: { id: true, slug: true, name: true } });
     if (category) return { type: 'category', payload: category };
-    const post = await this.prisma.post.findFirst({ where: { slug: segments[segments.length - 1], status: 'PUBLISHED' }, select: { id: true, slug: true, title: true, excerpt: true, content: true, readingTime: true, publishedAt: true } });
+  const post = await this.prisma.post.findFirst({ where: { slug: segments[segments.length - 1], status: 'PUBLISHED' }, select: { id: true, slug: true, title: true, excerpt: true, featuredImage: true, content: true, readingTime: true, publishedAt: true } });
     if (post) return { type: 'post', payload: post };
     return { type: 'not_found' };
   }
