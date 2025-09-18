@@ -8,4 +8,4 @@
 ALTER TABLE "public"."Post" ADD COLUMN     "featuredImage" TEXT;
 
 -- CreateIndex
-CREATE UNIQUE INDEX "MenuItem_parentId_slug_key" ON "public"."MenuItem"("parentId", "slug");
+-- CREATE UNIQUE INDEX "MenuItem_parentId_slug_key" ON "public"."MenuItem"("parentId", "slug");

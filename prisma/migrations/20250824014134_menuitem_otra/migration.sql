@@ -58,7 +58,7 @@ ALTER COLUMN "primaryColor" SET DEFAULT '#2563eb',
 ALTER COLUMN "secondaryColor" SET DEFAULT '#64748b';
 
 -- CreateIndex
-CREATE UNIQUE INDEX IF NOT EXISTS "MenuItem_parentId_slug_key" ON "public"."MenuItem"("parentId", "slug");
+-- CREATE UNIQUE INDEX IF NOT EXISTS "MenuItem_parentId_slug_key" ON "public"."MenuItem"("parentId", "slug");
 
 -- CreateIndex
 CREATE INDEX "ThemeSettings_category_idx" ON "public"."ThemeSettings"("category");
