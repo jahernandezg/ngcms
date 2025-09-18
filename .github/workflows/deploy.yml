@@ -112,20 +112,22 @@ jobs:
 
             # Elegir comando compose disponible
             if command -v docker-compose >/dev/null 2>&1; then DC="docker-compose"; else DC="docker compose"; fi
+            PROJ="-p tsinit"
 
-            # Pull y arranque DB
-            $DC -f docker-compose.deploy.yml pull db backend || true
-            $DC -f docker-compose.deploy.yml up -d db
+            # Limpieza y preparación
+            $DC $PROJ -f docker-compose.deploy.yml down --remove-orphans || true
+            $DC $PROJ -f docker-compose.deploy.yml pull db backend || true
+            $DC $PROJ -f docker-compose.deploy.yml up -d db
 
             echo "Esperando DB saludable..."
             for i in $(seq 1 60); do
-              if $DC -f docker-compose.deploy.yml exec -T db pg_isready -U ${POSTGRES_USER:-postgres} ; then echo "DB lista"; break; fi; sleep 2; done
+              if $DC $PROJ -f docker-compose.deploy.yml exec -T db pg_isready -U ${POSTGRES_USER:-postgres} ; then echo "DB lista"; break; fi; sleep 2; done
 
             echo "Prisma migrate deploy..."
-            BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
+            BACKEND_IMAGE="$BACKEND_IMAGE" $DC $PROJ -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
 
             echo "Verificando necesidad de seed (Prisma)..."
-            NEED_SEED=$($DC -f docker-compose.deploy.yml run --rm -e NODE_ENV=production backend node -e '
+            NEED_SEED=$($DC $PROJ -f docker-compose.deploy.yml run --rm -e NODE_ENV=production backend node -e '
               const { PrismaClient } = require("@prisma/client");
               const p = new PrismaClient();
               (async () => {
@@ -142,12 +144,12 @@ jobs:
             echo "NEED_SEED=$NEED_SEED"
             if [ "$NEED_SEED" = "yes" ]; then
               echo "Prisma db seed..."
-              BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma || { echo "Seed falló" >&2; exit 1; }
+              BACKEND_IMAGE="$BACKEND_IMAGE" $DC $PROJ -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma || { echo "Seed falló" >&2; exit 1; }
             else
               echo "Seed no necesario."
             fi
 
             # Levantar backend
-            BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml up -d db backend
+            BACKEND_IMAGE="$BACKEND_IMAGE" $DC $PROJ -f docker-compose.deploy.yml up -d --force-recreate --remove-orphans db backend
             docker image prune -f || true
             docker ps --format 'table {{.Names}}\t{{.Status}}' || true
