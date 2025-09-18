@@ -35,4 +35,4 @@ CREATE TABLE IF NOT EXISTS "public"."blog_config" (
 );
 
 -- CreateIndex (guarded to avoid duplicate errors on re-apply)
-CREATE UNIQUE INDEX IF NOT EXISTS "MenuItem_parentId_slug_key" ON "public"."MenuItem"("parentId", "slug");
+-- CREATE UNIQUE INDEX IF NOT EXISTS "MenuItem_parentId_slug_key" ON "public"."MenuItem"("parentId", "slug");

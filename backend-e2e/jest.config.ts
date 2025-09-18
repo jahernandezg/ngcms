@@ -6,6 +6,8 @@ export default {
   setupFiles: ['<rootDir>/src/support/test-setup.ts'],
   testEnvironment: 'node',
   testMatch: ['**/*.e2e-spec.ts','**/backend.spec.ts'],
+  // Aumentamos timeout para pruebas E2E que implican levantar servidor y seed
+  testTimeout: 30000,
   transform: {
     '^.+\\.[tj]s$': [
       'ts-jest',

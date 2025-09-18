@@ -1,6 +1,7 @@
 import { inject, Injectable, effect } from '@angular/core';
 import { Title, Meta } from '@angular/platform-browser';
 import { SiteSettingsService } from './site-settings.service';
+import { buildAssetUrl } from './asset-url.util';
 
 @Injectable({ providedIn: 'root' })
 export class SeoService {
@@ -18,6 +19,13 @@ export class SeoService {
     });
   }
 
+  /**
+   * Establece metadatos SEO y sociales.
+   * Prioridad de imagen (og:image / twitter:image):
+   * 1) opts.image (por ejemplo featuredImage del post)
+   * 2) settings.defaultPostImage
+   * 3) settings.ogImage
+   */
   set(opts: { title?: string; description?: string; canonical?: string; type?: string; image?: string }) {
     const settings = this.settingsSvc.settings();
     const baseTitle = settings?.siteName || this.siteName;
@@ -35,8 +43,9 @@ export class SeoService {
     this.meta.updateTag({ name: 'twitter:title', content: fullTitle });
     this.meta.updateTag({ property: 'og:type', content: opts.type || 'website' });
     this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
-  // og:image: prioridad a opts.image, luego settings (ogImage o defaultPostImage)
-  const og = opts.image || settings?.ogImage || settings?.defaultPostImage || undefined;
+    // og:image: prioridad a opts.image > defaultPostImage > ogImage (para coherencia de marca en posts)
+  const ogRaw = opts.image || settings?.defaultPostImage || settings?.ogImage || undefined;
+  const og = buildAssetUrl(ogRaw || null) || undefined;
     if (og) {
       this.meta.updateTag({ property: 'og:image', content: og });
       this.meta.updateTag({ name: 'twitter:image', content: og });

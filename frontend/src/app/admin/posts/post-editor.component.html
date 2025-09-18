@@ -44,6 +44,12 @@
       </div>
       <div class="space-y-6">
         <div>
+          <app-post-image-upload [existingUrl]="featuredImageUrl()" (fileSelected)="onImageSelected($event)"></app-post-image-upload>
+          @if (uploadingImage()) { <p class="text-[10px] text-gray-500 mt-1">Subiendo...</p> }
+          @if (uploadError()) { <p class="text-[10px] text-red-500 mt-1">{{uploadError()}}</p> }
+          @if (featuredImageUrl()) { <app-post-image-preview class="mt-2" [src]="featuredImageUrl()" alt="Imagen principal" /> }
+        </div>
+        <div>
           <p class="text-sm font-medium mb-2 text-gray-700 dark:text-gray-400">Categorías</p>
           @if (categories().length) {
           <div class="max-h-40 overflow-auto border dark:text-gray-400 dark:border-gray-600 rounded divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800/60">

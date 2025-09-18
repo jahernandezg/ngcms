@@ -6,7 +6,7 @@ import { ToastService } from '../components/toast-container.component';
 import { TaxonomyService } from '../taxonomy/taxonomy.service';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 
-interface PostListItem { id: string; title: string; status: string; updatedAt: string; authorName?: string; categories?: { name: string; slug: string }[]; tags?: { name: string; slug: string }[]; }
+interface PostListItem { id: string; title: string; status: string; updatedAt: string; authorName?: string; featuredImage?: string; categories?: { name: string; slug: string }[]; tags?: { name: string; slug: string }[]; }
 
 @Component({
   standalone: true,

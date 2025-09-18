@@ -445,6 +445,46 @@ Recomendado: regenerar tipos tras cambiar DTOs o decoradores Swagger.
 
 `SeoService.set()` maneja title/meta/og/twitter/canonical (idempotente). `SITE_URL` para canónicos absolutos.
 
+### 12.1 Imagen Principal (Featured Image) y og:image
+
+Sistema incorporado en Release 1.3 para soportar imagen destacada por Post con validación estricta y priorización SEO.
+
+Resumen rápido:
+
+- Upload admin: `POST /api/admin/uploads/post-image` (auth `ADMIN`)
+- Extensión permitida: PNG / JPG / JPEG / WEBP
+- Peso máximo: 3MB (se comprime >1MB con Sharp)
+- Validación aspecto: 16:9 con tolerancia ±1% (rechaza si fuera de rango)
+- Campo en Prisma: `Post.featuredImage String?` almacena ruta relativa `/uploads/post-image/<filename>`
+- Reemplazo: al actualizar un Post con nueva imagen se elimina el archivo anterior (best-effort)
+- Exposición pública: todos los endpoints de posts incluyen `featuredImage` (`/posts`, `/posts/:slug`, relacionados, category, tag, author, search, resolve path)
+
+Pipeline de subida (simplificado):
+1. Multer guarda archivo temporal en carpeta tipo (`/uploads/post-image`).
+2. Sharp lee metadatos -> se valida relación ancho/alto ~1.777... (16/9).
+3. (Opcional) Se redimensiona si excede dimensiones máximas internas (actualmente solo se comprime si >1MB).
+4. Se genera nombre único `<timestamp>-<rand>.<ext>`.
+5. Se persiste y retorna JSON con `{filename, url}`.
+
+Formato `featuredImage` en API: puede ser relativo (`/uploads/...`) o absoluto si ya se almacenó así. El frontend normaliza a absoluto para SEO cuando es relativo.
+
+Prioridad de imágenes SEO (`og:image` y `twitter:image`):
+1. `featuredImage` (si existe y pasa normalización)
+2. `defaultPostImage` (configurable en `/api/blog-config`)
+3. `ogImage` global (branding)
+4. (Opcional visual) Placeholder interno (no se usa para meta).
+
+Normalización: si la cadena comienza con `/uploads/` se antepone `SITE_URL` (`buildAssetUrl`) para producir URL absoluta requerida por scrapers (Facebook/Twitter/LinkedIn). Si ya es `http://` o `https://` se deja intacta.
+
+Testing E2E: specs backend validan que `/api/posts/:slug` y `/api/resolve?path=blog/:slug` devuelven `featuredImage` cuando el Post la tiene. Se recomienda añadir pruebas adicionales para endpoints de listado.
+
+Fallback frontend (componente `PostImageComponent`): usa la misma prioridad y muestra placeholder si no hay ninguna disponible.
+
+Consideraciones futuras:
+- Generar variantes responsive (srcset) y WebP/AVIF.
+- Integrar CDN y firma de URLs.
+- Invalidación de caché selectiva tras cambio de imagen (actualmente se invalida detalle al incrementar vistas, no por update de assets).
+
 ## 13. Logging
 
 Formato Winston JSON por línea.

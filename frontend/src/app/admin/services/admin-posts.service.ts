@@ -21,4 +21,12 @@ export class AdminPostsService {
   create<T>(payload: unknown) { return this.http.post<ApiResponse<T>>('/api/admin/posts', payload); }
   update<T>(id: string, payload: unknown) { return this.http.put<ApiResponse<T>>(`/api/admin/posts/${id}`, payload); }
   remove(id: string) { return this.http.delete<ApiResponse<{ deleted?: boolean }>>(`/api/admin/posts/${id}`); }
+
+  uploadFeaturedImage(file: File) {
+    const fd = new FormData(); fd.append('file', file);
+    return this.http.post<{ success?: boolean; data?: { url?: string; filename?: string } }>(`/api/admin/uploads/post-image/single`, fd);
+  }
+  deleteFeaturedImage(filename: string) {
+    return this.http.delete<ApiResponse<{ deleted?: boolean }>>(`/api/admin/uploads/post-image/${filename}`);
+  }
 }

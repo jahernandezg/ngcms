@@ -94,6 +94,9 @@
       <!-- table header start -->
       <thead>
         <tr class="border-gray-100 border-y dark:border-gray-800">
+          <th class="py-3 w-[170px]">
+            <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Imagen</p>
+          </th>
           <th class="py-3">
             <div class="flex items-center">
               <p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">
@@ -138,6 +141,12 @@
       <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
         @for (p of posts(); track p.id) {
         <tr>
+          <td class="py-3">
+            <div class="w-[150px] h-[84px] bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden rounded border border-gray-200 dark:border-gray-600">
+              <img *ngIf="p.featuredImage" [src]="p.featuredImage" alt="thumb" class="w-full h-full object-cover" />
+              <span *ngIf="!p.featuredImage" class="text-[10px] text-gray-400">—</span>
+            </div>
+          </td>
           <td class="py-3">
             <div class="flex items-center">
 
@@ -201,7 +210,7 @@
         }
         @if (!loading() && posts().length===0 ) {
         <tr>
-          <td colspan="3" class="py-3">
+          <td colspan="6" class="py-3">
             <div class="flex items-center">
               <p class="text-gray-500 text-theme-sm dark:text-gray-400">
                 Sin registros
@@ -212,7 +221,7 @@
         }
         @if (loading()) {
         <tr>
-          <td colspan="3" class="py-3">
+          <td colspan="6" class="py-3">
             <div class="flex items-center">
               <p class="text-gray-500 text-theme-sm dark:text-gray-400">
                 Cargando...

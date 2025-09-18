@@ -30,6 +30,7 @@ export class SearchService {
           title: true,
           slug: true,
           excerpt: true,
+          featuredImage: true,
           readingTime: true,
           publishedAt: true,
           author: { select: { id: true, name: true } },
