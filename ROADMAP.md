@@ -125,9 +125,71 @@ Este documento resume, en español, todo lo que está implementado hasta el mome
 
 ---
 
-## Próximos pasos sugeridos (no implementado aún, guía de trabajo)
-- Migrar /author/:id → /author/:slug en público.
-- Mejoras SEO (JSON‑LD adicionales, breadcrumbs, prev/next) y accesibilidad (auditoría axe).
-- Optimización de rendimiento (Deferrable Views, splitting, imágenes responsivas, hints de conexión).
-- Búsqueda avanzada (FTS Postgres, ranking ts_rank, trigram suggestions, facets).
-- Observabilidad (OpenTelemetry, Sentry) y hardening (CSP/COOP/CORP, análisis de dependencias/containers).
+## Roadmap futuro (planificado – será construido)
+
+Nota: Todas las líneas a continuación están planificadas y se desarrollarán en las próximas releases. Las fechas y el orden pueden ajustarse según prioridades y dependencias, pero el alcance funcional y los criterios de aceptación quedan definidos.
+
+### FASE 1 – FOUNDATION (pendiente)
+- Release 1.4 – Media Management (Gestión de archivos)
+  - Upload avanzado (drag & drop, reanudable por chunks hasta 5GB, progreso, reintentos).
+  - Validación (MIME/extensión, límites por tamaño/cuota, antivirus ClamAV, duplicados SHA‑256).
+  - Proveedores de storage: Local, AWS S3, Cloudinary, GCP, Azure; URLs firmadas privadas y CDN.
+  - Procesado de imágenes (variantes, WebP/AVIF, compresión, smart crop), vídeo/audio (transcoding, thumbnails, capítulos, subtítulos).
+  - Media library (carpetas, tags, metadatos, búsqueda avanzada, bulk ops), picker integrado al editor.
+  - Analytics de uso y costes; accesibilidad WCAG AA; tests unitarios/integración/E2E con coberturas altas.
+- Release 1.5 – Basic SEO (Meta tags y optimización)
+  - Motor técnico de SEO: meta dinámicos, canonical/redirecciones, schema markup básico.
+  - Optimizador de contenido en tiempo real (legibilidad, keywords, linking interno) y seguimiento básico de rankings.
+  - Integraciones GA4/Search Console/GTM; dashboards de SEO esenciales; reporting básico.
+- Release 1.6 – Performance (Optimización inicial)
+  - Caching multinivel (memoria/Redis/CDN) e invalidación; compresión y optimización de respuestas API.
+  - Code splitting y budgets; imágenes responsivas/lazy; PWA inicial (SW, offline básico).
+  - Monitorización de Core Web Vitals y APM; objetivos: LCP<2.5s, CLS<0.1, TBT<200ms.
+
+### FASE 2 – LEARNING PLATFORM
+- Release 2.1 – Course Structure (Sistema de cursos)
+  - Dominio Curso>Módulo>Lección, catálogo, course builder, UX de aprendizaje, dashboards instructor/estudiante.
+- Release 2.2 – Module System (Módulos y lecciones)
+  - Lecciones interactivas (video/texto/quiz/H5P), aprendizaje adaptativo, gamificación inicial.
+- Release 2.3 – Video Integration (Player y hosting)
+  - Streaming ABR (HLS), transcripción y capítulos automáticos, player interactivo, live con baja latencia.
+- Release 2.4 – Progress Tracking (Seguimiento)
+  - Tracking granular en tiempo real, analytics predictivo, intervenciones y gamificación avanzada.
+- Release 2.5 – Assessments (Quizzes y evaluaciones)
+  - >15 tipos de pregunta, auto‑grading (IA en abiertas), proctoring/anti‑cheating, banco de preguntas.
+- Release 2.6 – Certificates (Certificación)
+  - Certificados y badges (Open Badges), verificación (incl. blockchain), portal de verificación y analytics.
+
+### FASE 3 – MONETIZATION
+- Release 3.1 – Payment System
+  - Integración multi‑proveedor (Stripe/PayPal/crypto), pagos únicos y suscripciones, facturación e invoicing.
+- Release 3.2 – Membership Tiers (Membresías)
+  - Tiers con beneficios, rewards/puntos, engagement/retención, personalización por nivel.
+- Release 3.3 – Content Gating (Paywall)
+  - Reglas de acceso, previews optimizados, A/B testing, personalización y funnels de conversión.
+- Release 3.4 – Subscription Management
+  - Ciclo de vida, churn prediction (ML), dunning, revenue optimization y campañas de retención.
+- Release 3.5 – Analytics Pro
+  - Event tracking avanzado, tiempo real, modelos predictivos (LTV/churn/forecast), reporting BI.
+- Release 3.6 – Email Marketing
+  - Campañas y automatizaciones, segmentación avanzada, personalización dinámica, deliverability.
+
+### FASE 4 – EXTENSIBILITY
+- Release 4.1 – Plugin Foundation
+  - Core de plugins con SDK, runtime seguro (sandbox), carga dinámica y analítica de uso.
+- Release 4.2 – Theme System
+  - Motor de temas con editor visual (tokens, responsive), marketplace de temas y accesibilidad WCAG AA.
+- Release 4.3 – Plugin Marketplace + Widget System
+  - Marketplace de plugins (descubrimiento/licencias) y sistema de widgets con builder drag‑and‑drop, comunicación entre widgets y sandbox.
+- Release 4.4 – API Management
+  - Suite REST/GraphQL/Webhooks, OAuth2/API keys, rate limiting/quotas, portal para desarrolladores.
+- Release 4.5 – Advanced SEO
+  - Motor SEO avanzado (automatización técnica/contenido), keyword intelligence, rank tracking y reporting.
+- Release 4.6 – Performance Pro
+  - Plataforma de optimización pro (caching/CDN/imagenes/código), RUM y tuning automatizado con objetivos >90 en CWV.
+
+### Metas transversales (todas las releases planificadas)
+- Calidad: backend >90% y frontend >85% de cobertura; E2E de flujos críticos.
+- Rendimiento: tiempos de carga <2s en vistas clave; APIs p95 <200ms.
+- Seguridad/privacidad: RBAC, auditoría, cumplimiento (GDPR/PCI según módulo), escaneos y hardening.
+- Observabilidad: métricas/alertas en tiempo real, dashboards por dominio y SLAs documentados.
