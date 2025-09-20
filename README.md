@@ -1,580 +1,150 @@
-# CMS Blog Monorepo (Nx)
+# NGCMS – Monorepo (Nx)
 
-Monorepo (Nx) que contiene un backend NestJS + Prisma y un frontend Angular 20 (standalone + signals + SSR) para un blog básico con búsqueda, paginación, SEO y endpoints públicos.
+Aplicación CMS/blog moderna con Angular 20 (standalone + signals + SSR) y NestJS + Prisma + PostgreSQL, organizada como monorepo Nx. Incluye listado/detalle de posts, búsqueda, categorías, tags, páginas estáticas, menú dinámico, tematización base, autenticación con JWT (access/refresh), roles (ADMIN/AUTHOR) y consola de administración.
 
-## Branding e Identidad (Release 1.3)
+[![CI](https://github.com/jahernandezg/ngcms/actions/workflows/ci.yml/badge.svg)](https://github.com/jahernandezg/ngcms/actions/workflows/ci.yml)
+[![Deploy](https://github.com/jahernandezg/ngcms/actions/workflows/deploy.yml/badge.svg)](https://github.com/jahernandezg/ngcms/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Angular](https://img.shields.io/badge/Angular-20-DD0031?logo=angular&logoColor=white)](https://angular.io)
+[![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-316192?logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![Nx](https://img.shields.io/badge/Nx-21-143?logo=nx&logoColor=white&color=0f172a)](https://nx.dev)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4-38B2AC?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Cypress](https://img.shields.io/badge/E2E-Cypress-17202C?logo=cypress&logoColor=white)](https://www.cypress.io)
+[![Jest](https://img.shields.io/badge/Tests-Jest-C21325?logo=jest&logoColor=white)](https://jestjs.io)
 
-### Endpoints API
+* * *
 
-- GET /api/blog-config
-- PUT /api/blog-config (ADMIN)
-- POST /api/admin/uploads/:type (ADMIN) — types: logo-light, logo-dark, favicon, og-image, post-image
-- DELETE /api/admin/uploads/:type/:filename (ADMIN)
+## Tabla de Contenidos
+- Tecnologías utilizadas
+- Funcionalidades (MVP vigente)
+- Arquitectura técnica y endpoints
+- Cómo ejecutar el proyecto (Dev y Docker Compose)
+- Variables de entorno
+- Scripts disponibles
+- Estructura del repositorio
+- Roadmap y próximas mejoras
+- Contribuir y licencia
 
-### Límites y formatos
+* * *
 
-- Logos: PNG/JPEG/SVG, ≤ 2MB
-- Favicon: ICO o PNG 16/32/48, ≤ 1MB
-- OG y Post image: PNG/JPEG/WEBP, ≤ 3MB
-- Compresión: automática >1MB (sharp)
-
-### SEO y GA4
-
-- GA4 en SSR: define ANALYTICS_ID en el proceso SSR (Angular server) para inyectar script en HTML renderizado.
-- GA4 en cliente: si `analyticsId` está en `/api/blog-config`, el cliente lo inyecta dinámicamente.
-
-### Notas
-
-- Configuración cacheada en memoria 1h; se invalida al hacer PUT.
-- Archivos servidos estáticamente desde `/uploads`.
-
-## Estado CI
-
-Añade badge tras primer push:
-
-`![CI](https://github.com/<usuario>/<repo>/actions/workflows/ci.yml/badge.svg)`
-
-## Uso rápido (clonar desde GitHub)
-
-```bash
-git clone https://github.com/<usuario>/<repo>.git
-cd <repo>
-npm ci
-cp .env.example .env
-npm run bootstrap
-npm run start:backend &
-npm run start:frontend
-```
-
-## Preparación Repo
-
-- `.gitignore` consolidado
-- `.env.example` sin secretos
-- `LICENSE` MIT
-- `CONTRIBUTING.md`
-- Workflow CI (`.github/workflows/ci.yml`)
-
-## Roadmap Release 3 (CREST-V Pages / Menu / Themes)
-
-Esta sección documenta la Metodología CREST-V aplicada a la ampliación (Release 3) añadiendo Páginas estáticas, Menú dinámico, sistema base de Temas (Medium-style) y preparación de plantilla.
-
-### C - Contexto
-
-Extensión incremental sobre Release 2 (Posts + Admin). Se añaden entidades: Page, MenuItem, ThemeSettings. No se modifican tablas existentes → backward compatible.
-
-### R - Requerimientos Clave
-
-- Pages CRUD (admin) con status (DRAFT/PUBLISHED/ARCHIVED) y campos SEO.
-- Homepage dinámica (solo una Page `isHomepage=true`).
-- Menú dinámico jerárquico (foundation) con distintos tipos (PAGE, POST, BLOG_INDEX, CATEGORY, EXTERNAL_LINK) y orden drag & drop.
-- Theme foundation (ThemeSettings activo + variables CSS) estilo Medium (#f9d923 primario, #000 negro).
-- Slug único global lógico entre Posts y Pages (validación aplicación). Pages permiten cambiar slug (re‑verificación siempre).
-- SEO extendido: sitemap + JSON-LD + OpenGraph para páginas.
-
-### E - Estructura / Modelo
-
-Prisma (añadir):
-
-```prisma
-model Page {
-    id             String      @id @default(cuid())
-    title          String
-    slug           String      @unique
-    content        String
-    excerpt        String?
-    status         PageStatus  @default(DRAFT)
-    isHomepage     Boolean     @default(false)
-    seoTitle       String?
-    seoDescription String?
-    seoKeywords    String?
-    featuredImage  String?
-    author         User        @relation(fields: [authorId], references: [id])
-    authorId       String
-    sortOrder      Int         @default(0)
-    templateId     String?
-    createdAt      DateTime    @default(now())
-    updatedAt      DateTime    @updatedAt
-    @@index([slug])
-    @@index([isHomepage])
-}
-
-model MenuItem {
-    id            String       @id @default(cuid())
-    title         String
-    url           String?
-    type          MenuItemType
-    targetId      String?
-    parent        MenuItem?    @relation("MenuItemParent", fields: [parentId], references: [id])
-    parentId      String?
-    children      MenuItem[]   @relation("MenuItemParent")
-    sortOrder     Int          @default(0)
-    isVisible     Boolean      @default(true)
-    openNewWindow Boolean      @default(false)
-    createdAt     DateTime     @default(now())
-    updatedAt     DateTime     @updatedAt
-    @@index([type])
-    @@index([parentId])
-}
-
-model ThemeSettings {
-    id            String   @id @default(cuid())
-    name          String
-    isActive      Boolean  @default(false)
-    primaryColor  String   @default("#f9d923")
-    secondaryColor String  @default("#000000")
-    templatePath  String?
-    customCss     String?
-    settings      Json?
-    createdAt     DateTime @default(now())
-    updatedAt     DateTime @updatedAt
-    @@index([isActive])
-}
-
-enum PageStatus { DRAFT PUBLISHED ARCHIVED }
-enum MenuItemType { PAGE POST BLOG_INDEX CATEGORY EXTERNAL_LINK }
-```
-
-### S - Especificidad (Implementación)
-
-Backend:
-
-- Nuevos módulos: `pages`, `menu`, `themes`, `site-settings`.
-- Servicio `SlugService` central que valida unicidad de slug entre `post` y `page` en create/update.
-- Endpoint para fijar homepage: `PUT /api/admin/pages/:id/homepage` (desmarca otras dentro de transacción).
-- Menú público: `GET /api/menu` (estructura anidada ordenada por `sortOrder`).
-- Theme: `GET /api/theme` (retorna activo) y endpoints admin para cambiar activo / actualizar settings.
-
-Frontend:
-
-- Componentes públicos: header/navigation + page-detail + homepage dynamic.
-- Servicios: `PagesService`, `MenuService`, `ThemeService`.
-- Sistema SCSS modular + variables CSS (Medium theme base) y aislamiento admin vs público.
-- Ruta catch-all para pages (tras rutas específicas) con verificación de slug existente; sin lista de slugs reservados (decisión explícita).
-
-Slug Unicidad Global:
-
-- Estrategia: validación lógica (consulta ambos modelos). No se crea tabla unificada (KISS, mantiene migración simple). Riesgo de race condition mitigable con transacción + re‑check.
-
-### T - Trazabilidad / Fases
-
-1. Migración Prisma (schema + migración SQL raw para homepage única - opcional; preferimos lógica transaccional → no se añade trigger inicialmente).
-2. Backend scaffolding módulos + SlugService + endpoints principales.
-3. Frontend scaffolding componentes/servicios (UI mínima + theme variables).
-4. Integración SEO (extender sitemap y structured data) y Homepage dynamic.
-5. Testing: unit (services), e2e (pages + menu), performance re‑verificación.
-
-### V - Verificación / Criterios
-
-- Pages CRUD funcional + status + SEO campos.
-- Un solo homepage garantizado tras operación set-homepage.
-- Menú dinámico refleja orden y visibilidad; soporta tipos distintos.
-- Tema activo aplica variables CSS y separa estilos admin/público.
-- Slug único global validado en create/update (posts y pages).
-- Sitemap incluye páginas publicadas; meta tags correctos en SSR.
-
-### Scaffolding (Definición)
-
-Scaffolding es el andamiaje inicial de código generado (o escrito rápidamente) que establece la estructura mínima: módulos, controladores, servicios, DTOs, entidades y rutas básicas sin todavía toda la lógica de negocio madura. Permite iterar con base consistente, añadir lógica fina y tests sobre piezas ya posicionadas en el árbol del proyecto.
-
----
-
-## Stack
-
-- Nx 21 (orquestación)
+## Tecnologías utilizadas
+- Frontend: Angular 20 (standalone, signals, SSR), Tailwind, Angular CDK/Material (base en Admin)
 - Backend: NestJS 11, Prisma, PostgreSQL
-- Frontend: Angular 20 (signals, SSR), Tailwind
-- Librerías internas compartidas (`libs/shared-types`, `libs/utils`, `libs/database`)
-- Testing: Jest (unit), Cypress (e2e placeholder)
-- Validación: class-validator / class-transformer
-- Logging: middleware requestId + duración (winston JSON)
-- SEO: servicio central `SeoService` (title, meta, canonical, og, twitter)
-- Seguridad/perf: Helmet configurado y compresión gzip
+- Monorepo: Nx 21
+- Seguridad: JWT (access 15m, refresh 7d), roles ADMIN/AUTHOR, Helmet, rate limiting + lockout
+- Testing: Jest (unit), Cypress (E2E)
+- DevOps: Docker Compose (db/backend/frontend), GitHub Actions (CI/CD)
 
-## Requisitos previos
+## Funcionalidades (MVP vigente)
+- Público (SSR):
+  - Listado y detalle de posts con paginación, filtros (categoría, tag, autor), búsqueda básica, related posts
+  - Páginas estáticas (CRUD), homepage única, menú dinámico jerárquico, base de tematización tipo Medium
+  - SEO inicial: title/meta/canonical, OG/JSON‑LD en páginas, sitemap y robots.txt
+- Administración:
+  - Autenticación JWT (access/refresh), roles ADMIN/AUTHOR (ownership aplicado)
+  - CRUD de posts (DRAFT|PUBLISHED), páginas, menú; dashboard con métricas básicas
+  - Upload de imagen destacada (featured) por post con validación 16:9, compresión y thumbnails
+  - BlogConfig central: branding (logos, favicon, og), SEO básico, sociales y parámetros técnicos
+- Calidad/Operativa:
+  - Respuesta API uniforme { success, message, data, meta }, logging con requestId
+  - Objetivo cobertura vigente ≥60% (Jest + Cypress)
 
-- Node 18+
+> Resumen detallado por release y plan futuro: ver ROADMAP.md
 
-Monorepo con Backend NestJS + Prisma y Frontend Angular 20 (SSR) para un blog con búsqueda, paginación, SEO, caché y logging estructurado.
+## Arquitectura técnica y endpoints
+- Esquema de datos (Prisma): User, Post, Category, Tag, Page, MenuItem, ThemeSettings, BlogConfig, AuditLog (joins PostCategory/PostTag)
+- Endpoints públicos:
+  - GET /posts?page&limit | /posts/:slug | /posts/:slug/related
+  - GET /category/:slug | /tag/:slug | /author/:id (migración futura a /author/:slug)
+  - GET /search?q | /search/suggest?q | SEO: sitemap.xml, robots.txt
+- Admin (/api/admin):
+  - Auth: login, refresh
+  - Posts/Páginas/Menú: CRUD, ordenación, publicar, set homepage
+  - Temas: listar/activar/ajustes
+- Configuración/Uploads:
+  - GET/PUT /api/blog-config
+  - POST /api/uploads/logo-light|logo-dark|favicon|og-image
+  - POST/GET/DELETE /api/uploads/post-image
 
-## 1. Stack
+Más detalle y criterios de aceptación en ROADMAP.md.
 
-- Nx 21
-- NestJS 11 + Prisma + PostgreSQL
-- Angular 20 (standalone + signals + SSR) + Tailwind
-- Librerías internas: `shared-types`, `utils`, `database`
-- Testing: Jest (unit), Cypress (journey e2e)
-- Seguridad / Perf: Helmet, compresión
-- Logging: Winston JSON con correlación requestId
-- SEO: `SeoService` central (title/meta/og/twitter/canonical)
+## Cómo ejecutar el proyecto
 
-## 2. Requisitos previos
-
-- Node 18+
-- Postgres local o Docker
-- npm
-
-## 3. Variables de entorno
-
-| Variable | Req | Default | Descripción |
-|----------|-----|---------|-------------|
-| DATABASE_URL | Sí | - | Cadena conexión PostgreSQL |
-| PORT | No | 3000 | Puerto backend |
-| SITE_URL | No | <http://localhost:4000> | Base canónicos/SEO |
-| NODE_ENV | No | development | Entorno |
-| POSTS_CACHE_TTL_MS | No | 30000 | TTL (ms) caché listados |
-
-Ejemplo `.env`:
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/cms?schema=public
-SITE_URL=http://localhost:4200
-```
-
-## 4. Instalación
+### Opción A: Desarrollo local
+Requisitos previos: Node 18+, npm, PostgreSQL local (o usar Opción B con Docker).
 
 ```bash
 npm install
-npm run bootstrap
+cp .env.example .env
+npm run bootstrap   # prisma migrate + seed
+
+# En dos terminales
+npm run start:backend   # http://localhost:3000
+npm run start:frontend  # SSR en http://localhost:4000 (o 4200 según config)
 ```
 
-## 5. Scripts
-
-| Comando | Descripción |
-|---------|-------------|
-| start:backend | NestJS dev |
-| start:frontend | Angular SSR dev |
-| build:backend | Build backend |
-| build:frontend | Build frontend |
-| test | Unit tests (todos) |
-| test:coverage | Unit tests con cobertura |
-| prisma:migrate | Migraciones Prisma (dev) |
-| prisma:seed | Seed demo |
-| bootstrap | migrate + seed |
-| e2e | Cypress journey (orquesta DB + backend + frontend) |
-
-## 6. Flujo rápido dev
-
-1. Configura `.env`
-2. `npm install`
-3. `npm run bootstrap`
-4. `npm run start:backend` + `npm run start:frontend`
-5. Visita `http://localhost:4200` (o `:4300` vía script E2E)
-
-## 7. Arquitectura
-
-```text
-apps/
-    backend/
-    frontend/
-libs/
-    database/
-    utils/
-    shared-types/
-prisma/
-    schema.prisma
-    seed.ts + seed.cjs
-tools/
-    e2e-server.js
-```
-
-## 8. Modelos Prisma (extracto)
-
-User: id, name, email (unique), slug (unique, required), bio?, avatarUrl?, createdAt, updatedAt
-
-Post: id, title, slug (unique), excerpt?, content, status (DRAFT|PUBLISHED|ARCHIVED), authorId, readingTime, viewCount (default 0), publishedAt?, createdAt, updatedAt
-
-Enum PostStatus: DRAFT, PUBLISHED, ARCHIVED
-
-Índices relevantes: slug en User/Category/Tag/Post; status en Post.
-
-## 9. Backend
-
-Módulos: Posts, Search, Public (rutas cortas). (Servicios Category/Tag/Author se concentran en PostsService por simplicidad.)
-
-Middleware: requestContext (requestId), requestLogger (Winston), redirects 301 legacy.
-
-Interceptors / Filters: ResponseInterceptor, HttpErrorFilter.
-
-Caching: listado paginado en memoria (clave por query). Invalidación: al incrementar vistas de un post (detalle). Futuro: invalidación selectiva por creación/actualización y backend store (Redis).
-
-## 10. Frontend
-
-Angular standalone + signals. Páginas: home, post, category, tag, author, search. `SeoService` con guard SSR para document.
-
-## 11. Endpoints REST & Admin
- 
-## 11.1 Cobertura y Quality Gates
-
-Temporalmente los umbrales globales de cobertura se redujeron a (backend y frontend): statements 60 / branches 40 / functions 55 / lines 60 para permitir integración continua estable mientras se escriben tests específicos de nuevas rutas dinámicas y menú jerárquico. TODO: volver a (backend 85/70/80/85, frontend 70/50/65/70) en próximas iteraciones.
-
-
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | /posts?page&limit | Listado general |
-| GET | /category/:slug?page&limit | Por categoría (recursivo) |
-| GET | /tag/:slug?page&limit | Por tag |
-| GET | /author/:slug?page&limit | Por autor (slug) |
-| GET | /posts/:slug | Detalle (↑ vistas + invalida caché) |
-| GET | /posts/:slug/related | Relacionados (≤5) |
-| GET | /search?q&page&limit | Búsqueda (≥2 chars) |
-| GET | /search/suggest?q | Sugerencias básicas |
-
-Redirects 301 activos:
-
-| Origen | Destino |
-|--------|---------|
-| /posts/category/:slug | /category/:slug |
-| /posts/tag/:slug | /tag/:slug |
-| /posts/author/:id | /author/:slug |
-| /search/posts | /search |
-
-Política: mantener 301 ≥30 días; luego opcional 410 en rutas obsoletas.
-
-Formato éxito:
-
-```json
-{"success":true,"message":"OK","data":[],"meta":{"total":0,"page":1,"limit":10,"totalPages":0}}
-```
-
-Formato error:
-
-```json
-{"success":false,"message":"Not Found","statusCode":404,"path":"/posts/x","timestamp":"2025-08-15T12:00:00.000Z"}
-
-### 11.1. Consola Admin (Auth + Roles + Ownership + Auditoría)
-
-Características implementadas Release 2:
-
-- Autenticación JWT (access 15m, refresh 7d) + refresh transparente frontend.
-- Lockout tras 5 intentos fallidos durante 15 min + throttle 5/min en login.
-- Roles: `ADMIN`, `AUTHOR` (soportado). `ADMIN` ve todos los posts; `AUTHOR` sólo sus posts (scoping en `findAll` y `OwnershipGuard` en update/delete).
-- OwnershipGuard: impide editar/eliminar si no eres autor salvo que tengas rol `ADMIN`.
-- Auditoría: LOGIN, REFRESH, CREATE, UPDATE, DELETE (Post) registradas en `AuditLog`.
-- Sanitización HTML con `sanitize-html` (whitelist extendida para headings/img) + cálculo readingTime.
-- CRUD Taxonomías (categorías y tags) + asignación múltiple en posts.
-- Filtros avanzados: status, categoría, tag, búsqueda full-text (title/content contains) + paginación.
-- Editor Rich Text (Quill) con import dinámico + fallback.
-- Interceptores frontend: auth (refresh), loading overlay, error (toasts centralizados).
-- Response envelope backend uniforme (éxito / error) vía `ResponseInterceptor`.
-
-| Método | Ruta | Rol | Descripción |
-|--------|------|-----|-------------|
-| POST | /admin/auth/login | Público | Devuelve `{accessToken, refreshToken, roles}` (envuelto en `data`) |
-| POST | /admin/auth/refresh | Público (refresh válido) | Renueva par de tokens (incluye roles) |
-| GET | /admin/posts | ADMIN | Lista todos los posts |
-| GET | /admin/posts/:id | ADMIN | Detalle por id |
-| POST | /admin/posts | ADMIN | Crear post (DRAFT/PUBLISHED) |
-| PUT | /admin/posts/:id | ADMIN | Actualizar (auditoría) |
-| DELETE | /admin/posts/:id | ADMIN | Eliminar |
-| GET | /admin/dashboard/overview | ADMIN | Métricas resumidas |
-
-Formato unificado (interceptor) en respuestas exitosas y de error; los tokens de login/refresh se ubican en `data.accessToken` y `data.refreshToken`.
-
-Ejemplo login (tokens + roles):
-
-```json
-{
-    "success": true,
-    "message": "OK",
-    "data": {
-        "accessToken": "<jwt>",
-        "refreshToken": "<jwt>",
-        "roles": ["ADMIN"]
-    }
-}
-```
-
-Errores de auth típicos:
-
-| Código | Causa |
-|--------|-------|
-| 401 | Token ausente / inválido / refresh inválido |
-| 403 | Rol insuficiente o violación de ownership |
-
-### 11.2. Seguridad Auth & UX Admin
-
-Lista de medidas:
-
-- Access Token: expira en 15m
-- Refresh Token: expira en 7d
-- Lockout: 5 intentos fallidos -> cuenta bloqueada 15 min
-- Throttling login: 5 req / 60s
-- Frontend Admin: interceptor de refresh transparente + spinner global (overlay) cuando hay peticiones en curso + notificaciones toast.
-- RoleGuard (frontend) actualmente exige solo `ADMIN` en rutas; añadir nuevos roles requerirá únicamente ampliar arrays en rutas y provisioning de usuarios.
-
-## 12. OpenAPI & Tipos de Cliente
-
-Generación offline del spec (aplica wrapper `success/message/data` automáticamente) y tipos TypeScript reutilizables.
-
-Scripts:
-
-| Comando | Acción |
-|---------|--------|
-| `npm run openapi:gen` | Genera `swagger.json` (build backend + extracción) |
-| `npm run openapi:types` | Genera spec y tipos en `libs/shared-types/src/lib/openapi-types.ts` |
-
-Tipos genéricos exportados:
-
-```ts
-import { ApiResponse, ApiSuccess, ApiError } from '@cms-workspace/shared-types';
-
-function handle<T>(resp: ApiResponse<T>) {
-    if (resp.success) {
-        // resp.data es T
-    } else {
-        // resp.message / resp.statusCode
-    }
-}
-```
-
-Uso de un tipo de endpoint (ejemplo login) generado:
-
-```ts
-import type { components } from '@cms-workspace/shared-types';
-type AuthTokens = components['schemas']['AuthTokensDto'];
-```
-
-Recomendado: regenerar tipos tras cambiar DTOs o decoradores Swagger.
-
-- Auditoría: LOGIN, REFRESH, CREATE, UPDATE, DELETE (Post)
-- Sanitización HTML: `sanitize-html` en create/update
-- CORS y Helmet configurados (ver `main.ts`)
-
-
-## 12. SEO
-
-`SeoService.set()` maneja title/meta/og/twitter/canonical (idempotente). `SITE_URL` para canónicos absolutos.
-
-### 12.1 Imagen Principal (Featured Image) y og:image
-
-Sistema incorporado en Release 1.3 para soportar imagen destacada por Post con validación estricta y priorización SEO.
-
-Resumen rápido:
-
-- Upload admin: `POST /api/admin/uploads/post-image` (auth `ADMIN`)
-- Extensión permitida: PNG / JPG / JPEG / WEBP
-- Peso máximo: 3MB (se comprime >1MB con Sharp)
-- Validación aspecto: 16:9 con tolerancia ±1% (rechaza si fuera de rango)
-- Campo en Prisma: `Post.featuredImage String?` almacena ruta relativa `/uploads/post-image/<filename>`
-- Reemplazo: al actualizar un Post con nueva imagen se elimina el archivo anterior (best-effort)
-- Exposición pública: todos los endpoints de posts incluyen `featuredImage` (`/posts`, `/posts/:slug`, relacionados, category, tag, author, search, resolve path)
-
-Pipeline de subida (simplificado):
-1. Multer guarda archivo temporal en carpeta tipo (`/uploads/post-image`).
-2. Sharp lee metadatos -> se valida relación ancho/alto ~1.777... (16/9).
-3. (Opcional) Se redimensiona si excede dimensiones máximas internas (actualmente solo se comprime si >1MB).
-4. Se genera nombre único `<timestamp>-<rand>.<ext>`.
-5. Se persiste y retorna JSON con `{filename, url}`.
-
-Formato `featuredImage` en API: puede ser relativo (`/uploads/...`) o absoluto si ya se almacenó así. El frontend normaliza a absoluto para SEO cuando es relativo.
-
-Prioridad de imágenes SEO (`og:image` y `twitter:image`):
-1. `featuredImage` (si existe y pasa normalización)
-2. `defaultPostImage` (configurable en `/api/blog-config`)
-3. `ogImage` global (branding)
-4. (Opcional visual) Placeholder interno (no se usa para meta).
-
-Normalización: si la cadena comienza con `/uploads/` se antepone `SITE_URL` (`buildAssetUrl`) para producir URL absoluta requerida por scrapers (Facebook/Twitter/LinkedIn). Si ya es `http://` o `https://` se deja intacta.
-
-Testing E2E: specs backend validan que `/api/posts/:slug` y `/api/resolve?path=blog/:slug` devuelven `featuredImage` cuando el Post la tiene. Se recomienda añadir pruebas adicionales para endpoints de listado.
-
-Fallback frontend (componente `PostImageComponent`): usa la misma prioridad y muestra placeholder si no hay ninguna disponible.
-
-Consideraciones futuras:
-- Generar variantes responsive (srcset) y WebP/AVIF.
-- Integrar CDN y firma de URLs.
-- Invalidación de caché selectiva tras cambio de imagen (actualmente se invalida detalle al incrementar vistas, no por update de assets).
-
-## 13. Logging
-
-Formato Winston JSON por línea.
-
-Ejemplo:
-
-```json
-{"level":"info","message":"http_request","method":"GET","path":"/posts","statusCode":200,"durationMs":42,"requestId":"abc123"}
-```
-
-Eventos: `http_request`, `app_started`. Niveles configurables por `LOG_LEVEL` (futuro – pendiente variable).
-
-## 14. Testing & Coverage
-
-Unit tests: `npm test` / `npm run test:coverage`.
-
-Threshold frontend: Statements 60%, Branches 40%, Functions 55%, Lines 60%. (Expandible tras añadir más specs.)
-
-E2E journey (`npm run e2e`): home -> primer post -> back. Script `tools/e2e-server.js` levanta DB (5433 host), migra, seed, back (3000), front (4300) y lanza Cypress.
-
-E2E adicionales internos (backend) incluyen flujo admin mockeado: login -> crear borrador -> publicar -> listar (ver `admin-journey-e2e.spec.ts`).
-
-Próximos E2E: búsqueda, category->post, tag->post, author, paginación, búsqueda sin resultados.
-
-### 14.1 Performance Script
-
-Script de sembrado + micro benchmarks clave admin: `backend/src/scripts/perf.seed-and-test.ts`.
-
-Genera (si faltan) ~N posts (por defecto 1000) y mide:
-
-- LIST drafts (page1)
-- LIST published (page1)
-- CREATE post
-- UPDATE (publish)
-
-Uso (backend levantado en 3000) vía script npm:
+Notas:
+- Variables por defecto en .env apuntan a PostgreSQL en localhost:5433 (ver compose dev).
+- Script alternativo Windows (backend): `npm run start:backend:ps`.
+
+### Opción B: Docker Compose (db + backend + frontend)
 
 ```bash
-npm run perf:admin
+docker compose up --build
+# Backend:  http://localhost:3000
+# Frontend: http://localhost:4000
 ```
 
-O manual con variables:
+Archivos disponibles: `docker-compose.yml`, `docker-compose.prod.yml`, `docker-compose.deploy.yml`.
 
-```bash
-BASE_URL=http://localhost:3000 PERF_COUNT=1200 npx ts-node -r tsconfig-paths/register backend/src/scripts/perf.seed-and-test.ts
+## Variables de entorno
+Ejemplo base (.env.example):
+
+- NODE_ENV=development
+- SITE_URL=http://localhost:4200
+- DATABASE_URL=postgresql://postgres:postgres@localhost:5433/cms?schema=public
+- PORT=3000
+- POSTS_CACHE_TTL_MS=30000
+- JWT_ACCESS_SECRET=change_me_access
+- JWT_REFRESH_SECRET=change_me_refresh
+- (Prod) CORS_ORIGINS, API_BASE, SSR_MICROCACHE, POSTGRES_*
+
+## Scripts disponibles
+Desde package.json:
+
+- start:backend / start:frontend / build:backend / build:frontend
+- test / test:coverage / lint / e2e
+- prisma:generate / prisma:migrate / prisma:seed / bootstrap
+- openapi:gen / openapi:types / openapi:all
+- user:create / user:create:env
+- perf:admin
+
+## Estructura del repositorio (resumen)
+```
+backend/        # NestJS (módulos, controladores, servicios, scripts perf)
+frontend/       # Angular 20 SSR (público + consola admin)
+libs/           # Librerías compartidas (shared-types, utils, database)
+prisma/         # schema.prisma, migraciones y seed
+scripts/        # utilidades y mantenimiento
+uploads/        # assets subidos (logos, og, featured images)
 ```
 
-Salida ejemplo:
+## Roadmap y próximas mejoras
+Consulta el documento completo: [ROADMAP.md](./ROADMAP.md)
 
-```text
-[PERF] Preparando seed y tests: base http://localhost:3000 count 1000
-[PERF] Seed listo
-[PERF] LIST drafts page1         42.3ms
-[PERF] LIST published page1      40.8ms
-[PERF] CREATE post               28.5ms
-[PERF] UPDATE post publish       31.2ms
-```
+- Fase 1 en curso:
+  - R1.6 Performance: caching multinivel, Deferrable Views/deferred loading, PWA inicial, CWV objetivos
+  - R1.7 Hardening (será construido): control flow Angular (@if/@for), Signals ampliamente, Admin UX (Material + Tailwind), CRUD taxonomías, rotación de refresh tokens, 2FA opcional, auditoría ampliada, OpenAPI completa
+- Fases siguientes (será construido):
+  - Media Management avanzado (chunked uploads, multi‑storage, antivirus, librería multimedia)
+  - SEO avanzado, Performance Pro, Plataforma de cursos/LMS, Monetización, Plugins, Themes y API Management
 
-Interpretación rápida:
-
-- LIST ≤ 60ms en dataset 1k considerado OK local.
-- CREATE/UPDATE ≤ 80ms con Prisma local aceptable; revisar índices si supera consistentemente.
-
-## 15. Seed
-
-`prisma/seed.ts` crea un único usuario `admin@example.com` (rol ADMIN), categorías, tags y posts publicados con readingTime calculado.
-
-## 16. Roadmap breve
-
-- Más specs Cypress (buscar, taxonomías, author, paginación)
-- Hardening refresh token rotation (lista negra / hash)
-- Slug collisions / re-slugging (estrategia) futura
-- Cache store externo (Redis) opcional
-- Observabilidad (tracing OpenTelemetry + métricas, Prometheus exporter)
-- i18n
-- Modo lectura offline (PWA) para frontend público
-
-## 17. Licencia
-
-MIT
+## Contribuir y licencia
+- Guía: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- Licencia: [MIT](./LICENSE)
 
 ---
-`npx nx graph` para visualización de dependencias.
 
-- (Pendiente) Completar suite Cypress (flujos: home -> post -> búsqueda -> categoría/tag).
-- Internacionalización (i18n) futura.
-
-## Licencia
-
-MIT
-
----
-Monorepo gestionado con Nx. Usa `npx nx graph` para visualizar dependencias.
+Monorepo gestionado con Nx. `npx nx graph` para visualizar dependencias.
