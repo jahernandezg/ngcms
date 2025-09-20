@@ -143,8 +143,36 @@ Nota: Todas las líneas a continuación están planificadas y se desarrollarán 
   - Integraciones GA4/Search Console/GTM; dashboards de SEO esenciales; reporting básico.
 - Release 1.6 – Performance (Optimización inicial)
   - Caching multinivel (memoria/Redis/CDN) e invalidación; compresión y optimización de respuestas API.
-  - Code splitting y budgets; imágenes responsivas/lazy; PWA inicial (SW, offline básico).
+  - Code splitting y budgets; Deferrable Views y deferred loading; imágenes responsivas/lazy; PWA inicial (SW, offline básico).
   - Monitorización de Core Web Vitals y APM; objetivos: LCP<2.5s, CLS<0.1, TBT<200ms.
+
+- Release 1.7 – Hardening de Arquitectura, Auth y Admin (derivado de R1.1–R1.3; será construido)
+  - Angular 20 y Nx:
+    - Migración a nuevo control flow (@if/@for, @switch) en vistas clave.
+    - Signals para estado local y comunicación entre componentes; zoneless-ready donde aplique.
+    - Deferrable Views y deferred loading en rutas/bloques no críticos; Image Directive; ajustes de hydration SSR.
+  - Admin UX (Angular Material + Tailwind):
+    - Homologar UI de Admin con Angular Material (tabla, paginator, sort, dialogs, snackbar).
+    - Form builder reactivo con validaciones avanzadas y estados; autosave de borradores; previsualización rica.
+    - Editor de contenido mejorado: embeds (YouTube/Twitter), markdown/HTML con sanitización, atajos de teclado e historial de cambios.
+  - Contenido:
+    - Programación de publicación (scheduledAt) y despublicación; estados extendidos DRAFT|PUBLISHED|ARCHIVED.
+    - Versionado/revisiones de posts y pages con diff y restore.
+  - Taxonomías:
+    - CRUD de Categorías y Tags en Admin; merge/split de tags; ordenación y slugs con transliteración.
+  - Usuarios y roles:
+    - CRUD de usuarios, asignación de roles, perfil y avatar; migración de /author/:id a /author/:slug.
+  - Autenticación y seguridad:
+    - Rotación de refresh tokens y lista de revocación; cierre de sesión por dispositivo/sesión.
+    - 2FA TOTP opcional; políticas de contraseña; CAPTCHA adaptativo tras intentos fallidos.
+    - Rate limiting por endpoint/usuario/IP; allow/deny list para Admin; headers hardening; CSRF si se usan cookies.
+    - Auditoría ampliada (acciones clave en Admin); GDPR: export y borrado de datos.
+  - API y documentación:
+    - Versionado v1 estable; OpenAPI completa y ejemplos; contratos estrictos de errores.
+  - Operativa:
+    - Docker Compose con perfiles dev/prod, healthchecks y scripts idempotentes; semillas reproducibles.
+  - Pruebas:
+    - Aumentar cobertura a ≥70% en Fase 1 con suites para auth, roles, pages, menú, uploads y scheduling; E2E de flujos críticos de Admin.
 
 ### FASE 2 – LEARNING PLATFORM
 - Release 2.1 – Course Structure (Sistema de cursos)
