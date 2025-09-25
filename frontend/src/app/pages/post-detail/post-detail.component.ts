@@ -339,7 +339,8 @@ export class PostDetailComponent {
 
   getPostImage(): string {
     const p = this.post() as (ReturnType<typeof this.post> & { featuredImage?: string }) | null;
-    return p?.featuredImage || this.siteSettings.settings()?.defaultPostImage || this.siteSettings.settings()?.ogImage || 'https://placehold.co/800x450?text=Sin+Imagen';
+    const raw = p?.featuredImage || this.siteSettings.settings()?.defaultPostImage || this.siteSettings.settings()?.ogImage || 'https://placehold.co/800x450?text=Sin+Imagen';
+    return buildAssetUrl(raw) || raw;
   }
 
   getAuthorInitials(name: string): string {

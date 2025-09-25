@@ -1,6 +1,7 @@
 import { Component, Input, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SiteSettingsService } from './site-settings.service';
+import { buildAssetUrl } from './asset-url.util';
 
 @Component({
   standalone: true,
@@ -21,5 +22,8 @@ export class PostImageComponent {
   private settings = inject(SiteSettingsService);
   @Input() src: string | null | undefined;
   @Input() alt = '';
-  finalSrc = computed(() => this.src || this.settings.settings()?.defaultPostImage || this.settings.settings()?.ogImage || null);
+  finalSrc = computed(() => {
+    const raw = this.src || this.settings.settings()?.defaultPostImage || this.settings.settings()?.ogImage || null;
+    return buildAssetUrl(raw);
+  });
 }

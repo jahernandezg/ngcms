@@ -5,13 +5,14 @@ import { AdminPostsService } from '../services/admin-posts.service';
 import { ToastService } from '../components/toast-container.component';
 import { TaxonomyService } from '../taxonomy/taxonomy.service';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import { PostImageComponent } from '../../shared/post-image.component';
 
 interface PostListItem { id: string; title: string; status: string; updatedAt: string; authorName?: string; featuredImage?: string; categories?: { name: string; slug: string }[]; tags?: { name: string; slug: string }[]; }
 
 @Component({
   standalone: true,
   selector: 'app-admin-post-list',
-  imports: [CommonModule, RouterModule, FontAwesomeModule],
+  imports: [CommonModule, RouterModule, FontAwesomeModule, PostImageComponent],
   // styles moved to global styles
   templateUrl: './post-list.component.html'
 })
