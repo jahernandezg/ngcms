@@ -78,31 +78,10 @@
 
           </div>
 
-          <!-- Table of Contents -->
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 mb-12 border border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-              </svg>
-              Contenido del Artículo
-            </h2>
-            <nav class="toc">
-              <ul class="space-y-2 text-sm">
-                <li><a href="#introduccion" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">1. Introducción a Signals</a></li>
-                <li><a href="#que-son-signals" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">2. ¿Qué son los Signals?</a></li>
-                <li><a href="#signals-vs-rxjs" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">3. Signals vs RxJS</a></li>
-                <li><a href="#implementacion-practica" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">4. Implementación Práctica</a></li>
-                <li><a href="#casos-uso" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">5. Casos de Uso Comunes</a></li>
-                <li><a href="#mejores-practicas" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">6. Mejores Prácticas</a></li>
-                <li><a href="#performance" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">7. Optimización de Performance</a></li>
-                <li><a href="#conclusion" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">8. Conclusión</a></li>
-              </ul>
-            </nav>
-          </div>
 
           <!-- Article Content -->
-          <div class="prose prose-lg prose-gray dark:prose-invert max-w-none">
-            <div [innerHTML]="safeContent()"></div>
+          <div class="prose prose-lg prose-gray dark:prose-invert max-w-none p-0 m-0">
+            <app-dynamic-html-renderer [htmlContent]="(post()?.content) || ''" (contentAnalyzed)="onContentAnalyzed($event)"></app-dynamic-html-renderer>
 
             <!-- Tags -->
             <div class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
@@ -250,5 +229,7 @@
 
   <script type="application/ld+json" [textContent]="jsonLd()"></script>
 } @else {
-  <p class="p-4">Cargando…</p>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <app-content-skeleton variant="post" />
+  </div>
 }

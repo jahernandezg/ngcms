@@ -11,17 +11,26 @@ import { HttpClient } from '@angular/common/http';
 import { unwrapData } from '../../shared/http-utils';
 import { ThemeService } from '../../shared/theme.service';
 import { TwindService } from '../../shared/twind.service';
+import { DynamicHtmlRendererComponent } from '../../shared/dynamic-content/components/dynamic-html-renderer/dynamic-html-renderer.component';
+import { ContentSkeletonComponent } from '../../shared/ui/content-skeleton/content-skeleton.component';
 
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, DynamicHtmlRendererComponent, ContentSkeletonComponent],
   template: `
     <section>
+      @if (showSkeleton()) {
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 min-h-[65vh]">
+          <app-content-skeleton variant="page" />
+        </div>
+      } @else {
       <!-- Modo Página Home (sin cambiar la URL) -->
       @if (homepage()) {
-  <article [innerHTML]="safeHomeContent()"></article>
+  <article>
+    <app-dynamic-html-renderer [htmlContent]="homepage()?.content || ''"></app-dynamic-html-renderer>
+  </article>
       } @else {
         <h1 class="text-2xl font-semibold mb-4">Últimos posts</h1>
         @if (!svc.loading()) {
@@ -55,9 +64,14 @@ import { TwindService } from '../../shared/twind.service';
             <button class="px-3 py-1 border rounded" [disabled]="svc.page() >= svc.totalPages() || svc.loading()" (click)="svc.next()">Siguiente</button>
           </nav>
         } @else {
-          @if (svc.loading()) { <p>Cargando…</p> }
+          @if (svc.loading()) {
+            <div class="min-h-[50vh]">
+              <app-content-skeleton variant="page" />
+            </div>
+          }
           @if (!svc.loading() && svc.error()) { <p class="text-red-600">{{ svc.error() }}</p> }
         }
+      }
       }
     </section>
   `,
@@ -78,6 +92,15 @@ export class HomeComponent implements OnInit {
   readonly safeHomeContent = signal<SafeHtml | undefined>(undefined);
   private homepageLoaded = false; // ya se cargó homepage (éxito)
   private blogLoaded = false; // evita cargas duplicadas de posts
+  // Skeleton inicial (mientras resolvemos si hay homepage o modo blog)
+  readonly loading = signal<boolean>(true);
+  readonly showSkeleton = () => {
+    // Mostrar skeleton si seguimos resolviendo homepage o si entramos en blog y la lista aún carga
+    const homepagePending = this.loading();
+    const blogPending = !this.homepage() && this.svc.loading();
+    const errorLoading = this.svc.error() !== null;
+    return homepagePending || blogPending || errorLoading;
+  };
 
   ngOnInit() {
     // Estado inicial manual (evitamos duplicidad con la suscripción)
@@ -113,6 +136,7 @@ export class HomeComponent implements OnInit {
   }
 
   private tryLoadHomepageOrBlogFallback() {
+  this.loading.set(true);
   this.http.get<unknown>('/api/pages/homepage').subscribe({
       next: (res) => {
     const data = unwrapData<PageDetail | null>(res as unknown as { data: PageDetail | null } | PageDetail | null);
@@ -128,11 +152,13 @@ export class HomeComponent implements OnInit {
           });
 
           queueMicrotask(async () => { try { await this.applyTwindNow(); } catch { /* empty */ } });
+          this.loading.set(false);
         } else {
           this.enterBlogMode();
+          this.loading.set(false);
         }
       },
-      error: () => this.enterBlogMode()
+      error: () => { this.enterBlogMode(); this.loading.set(false); }
     });
   }
 

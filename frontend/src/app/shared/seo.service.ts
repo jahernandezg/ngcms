@@ -26,7 +26,7 @@ export class SeoService {
    * 2) settings.defaultPostImage
    * 3) settings.ogImage
    */
-  set(opts: { title?: string; description?: string; canonical?: string; type?: string; image?: string }) {
+  set(opts: { title?: string; description?: string; canonical?: string; type?: string; image?: string; robots?: string }) {
     const settings = this.settingsSvc.settings();
     const baseTitle = settings?.siteName || this.siteName;
     const fullTitle = opts.title ? `${opts.title} | ${baseTitle}` : baseTitle;
@@ -56,6 +56,9 @@ export class SeoService {
     }
     if (opts.canonical) {
       this.setCanonical(opts.canonical);
+    }
+    if (opts.robots) {
+      this.meta.updateTag({ name: 'robots', content: opts.robots });
     }
   }
 

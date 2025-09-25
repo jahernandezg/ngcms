@@ -100,6 +100,7 @@ export class AdminPostsService {
     slug,
         content: safeContent,
         status: data.status,
+        publishedAt: data.status === 'PUBLISHED' ? new Date() : null,
         ...(safeExcerpt ? { excerpt: safeExcerpt } : {}),
         authorId: userId,
         readingTime: Math.max(1, Math.round(safeContent.split(/\s+/).length / 200)),
@@ -118,7 +119,7 @@ export class AdminPostsService {
   }
 
   async update(id: string, userId: string, data: { title?: string; content?: string; status?: PostStatus; excerpt?: string; categories?: string[]; tags?: string[]; featuredImage?: string | null }) {
-  const existing = await this.prisma.post.findUnique({ where: { id }, select: { id: true, authorId: true, version: true, featuredImage: true } });
+  const existing = await this.prisma.post.findUnique({ where: { id }, select: { id: true, authorId: true, version: true, featuredImage: true, publishedAt: true } });
     if (!existing) throw new NotFoundException();
     const actor = await this.prisma.user.findUnique({ where: { id: userId }, select: { roles: true } });
     const isAdmin = actor?.roles.includes('ADMIN');
@@ -134,6 +135,7 @@ export class AdminPostsService {
         ...(safeContent ? { content: safeContent } : {}),
         ...(data.status ? { status: data.status } : {}),
         ...(safeExcerpt !== undefined ? { excerpt: safeExcerpt } : {}),
+        publishedAt: existing.publishedAt === null ? data.status === 'PUBLISHED' ? new Date() : existing.publishedAt : existing.publishedAt,
         lastEditedBy: userId,
         lastEditedAt: new Date(),
         version: existing.version + 1,
