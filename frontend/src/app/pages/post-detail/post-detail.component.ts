@@ -12,7 +12,10 @@ import { SiteSettingsService } from '../../shared/site-settings.service';
 import { ShareButtonDirective } from 'ngx-sharebuttons';
 import { SocialLinksComponent } from '../../shared/social-links/social-links.component';
 import { PostImageComponent } from '../../shared/post-image.component';
+import { DynamicHtmlRendererComponent } from '../../shared/dynamic-content/components/dynamic-html-renderer/dynamic-html-renderer.component';
+import { ContentSkeletonComponent } from '../../shared/ui/content-skeleton/content-skeleton.component';
 import { buildAssetUrl } from '../../shared/asset-url.util';
+import { DynamicContentContextService } from '../../shared/dynamic-content/services/dynamic-content-context.service';
 
 type PostDetail = {
   id: string;
@@ -35,7 +38,7 @@ interface ApiListEnvelope<T> { success: boolean; message?: string; data: T[] }
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, ShareButtonDirective, FontAwesomeModule, SocialLinksComponent, PostImageComponent],
+  imports: [CommonModule, RouterModule, ShareButtonDirective, FontAwesomeModule, SocialLinksComponent, PostImageComponent, DynamicHtmlRendererComponent, ContentSkeletonComponent],
   templateUrl: './post-detail.component.html',
 })
 export class PostDetailComponent {
@@ -48,6 +51,7 @@ export class PostDetailComponent {
   private sanitizer = inject(DomSanitizer);
   private twind = inject(TwindService);
   private siteSettings = inject(SiteSettingsService);
+  private dynCtx = inject(DynamicContentContextService);
 
 
 
@@ -103,6 +107,8 @@ export class PostDetailComponent {
     effect(() => {
       const p = this.post();
       if (!p) return;
+      // Exponer el slug actual al sistema dinámico
+      this.dynCtx.setPostSlug(p.slug);
       const path = typeof window !== 'undefined' ? window.location.pathname : `/${p.slug}`;
       const desc = p.excerpt || this.truncate(p.content, 160);
       const settings = this.siteSettings.settings();
@@ -357,5 +363,14 @@ export class PostDetailComponent {
       'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
     ];
     return colors[index % colors.length] + ' px-3 py-1 rounded-full text-sm';
+  }
+
+  onContentAnalyzed(meta: { title?: string; description?: string }) {
+    const p = this.post();
+    if (!p) return;
+    if (!p.excerpt || !p.excerpt.trim()) {
+      // actualizar solo la descripción manteniendo título y demás metadatos previos
+      this.seo.set({ title: p.title, description: meta.description || this.truncate(p.content, 160), type: 'article' });
+    }
   }
 }

@@ -6,11 +6,14 @@ import { ActivatedRoute } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, tap } from 'rxjs/operators';
 import { SeoService } from '../../shared/seo.service';
 import { PostDetailComponent } from '../post-detail/post-detail.component';
 import { BlogListComponent } from '../blog/blog-list.component';
 import { ThemeService } from '../../shared/theme.service';
+import { DynamicHtmlRendererComponent } from '../../shared/dynamic-content/components/dynamic-html-renderer/dynamic-html-renderer.component';
+import { ContentSkeletonComponent } from '../../shared/ui/content-skeleton/content-skeleton.component';
+import { NotFoundStateComponent } from '../../shared/ui/not-found-state/not-found-state.component';
 import { TwindService } from '../../shared/twind.service';
 
 type ResolvedTypes = 'homepage' | 'page' | 'blog' | 'category' | 'post' | 'not_found';
@@ -24,19 +27,33 @@ interface ResolveResponse { success: boolean; data: { type: ResolvedTypes; paylo
 @Component({
   standalone: true,
   selector: 'app-dynamic-public',
-  imports: [CommonModule, RouterModule, PostDetailComponent, BlogListComponent],
+  imports: [CommonModule, RouterModule, PostDetailComponent, BlogListComponent, DynamicHtmlRendererComponent, ContentSkeletonComponent, NotFoundStateComponent],
   template: `
   <ng-template #loadingTpl>
-    <p class="p-4">Cargando…</p>
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 min-h-[65vh]">
+      <app-content-skeleton [variant]="(type() === 'post' ? 'post' : 'page')" />
+    </div>
   </ng-template>
   @if (!loading()) {
-  <section class="container-fluid site-shell" #dynRoot>
+  <section class="container-fluid site-shell min-h-[60vh]" #dynRoot>
     @switch (type()) {
     @case ('homepage') {
-  <article [innerHTML]="safeContent()"></article>
+  <article>
+    @if (contentString(); as html) {
+      <app-dynamic-html-renderer [htmlContent]="html" (contentAnalyzed)="onContentAnalyzed($event)"></app-dynamic-html-renderer>
+    } @else {
+      <app-content-skeleton variant="page" />
+    }
+  </article>
       }
       @case ('page') {
-  <article  [innerHTML]="safeContent()"></article>
+  <article>
+    @if (contentString(); as html) {
+      <app-dynamic-html-renderer [htmlContent]="html" (contentAnalyzed)="onContentAnalyzed($event)"></app-dynamic-html-renderer>
+    } @else {
+      <app-content-skeleton variant="page" />
+    }
+  </article>
       }
       @case ('blog') {
         <app-blog-list
@@ -57,8 +74,7 @@ interface ResolveResponse { success: boolean; data: { type: ResolvedTypes; paylo
         <app-post-detail [slug]="postSlug()"></app-post-detail>
       }
       @default {
-        <h1 class="text-2xl font-semibold mb-4">404</h1>
-        <p>No encontrado.</p>
+        <app-not-found-state />
       }
     }
   </section>
@@ -71,6 +87,8 @@ export class DynamicPublicComponent implements AfterViewInit{
   private seo = inject(SeoService);
   private sanitizer = inject(DomSanitizer);
   private twind = inject(TwindService);
+  private fetchStart = 0;
+  private readonly minSkeletonMs = 200;
 
   readonly loading = signal(true);
   readonly type = signal<string>('loading');
@@ -84,6 +102,13 @@ export class DynamicPublicComponent implements AfterViewInit{
   constructor() {
     this.route.url.pipe(
       takeUntilDestroyed(),
+      tap(() => {
+        // Mostrar skeleton en cada navegación mientras resolvemos el tipo y payload
+        this.loading.set(true);
+        this.type.set('loading');
+        this.payload.set(null);
+        this.fetchStart = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+      }),
       switchMap(segments => {
         const path = segments.map(s => s.path).join('/');
         this.currentPath.set(path); // guardar ruta base para construir enlaces a detalle
@@ -91,7 +116,7 @@ export class DynamicPublicComponent implements AfterViewInit{
       })
     ).subscribe({
       next: (res) => {
-        this.loading.set(false);
+        this.endLoadingWithMinDelay();
         this.type.set(res.data.type || 'not_found');
   this.payload.set(res.data.payload || null);
   const payload: AnyPayload = res.data.payload;
@@ -111,12 +136,15 @@ export class DynamicPublicComponent implements AfterViewInit{
         } else if (res.data.type === 'post') {
           const p = payload as PostPayload;
           this.seo.set({ title: p.title, description: p.excerpt || p.content?.slice(0, 160), type: 'article' });
+        } else if (res.data.type === 'not_found') {
+          this.seo.set({ title: '404', description: 'Página no encontrada', robots: 'noindex, nofollow' });
         }
         // Listados ahora son responsabilidad de BlogListComponent
       },
       error: () => {
-        this.loading.set(false);
+        this.endLoadingWithMinDelay();
         this.type.set('not_found');
+        this.seo.set({ title: '404', description: 'Página no encontrada', robots: 'noindex, nofollow' });
       }
     });
   }
@@ -137,5 +165,37 @@ export class DynamicPublicComponent implements AfterViewInit{
   private async applyTwindNow() {
     const container = this.dynRoot?.nativeElement || document.body;
     await this.twind.applyToContainer(container);
+  }
+
+  contentString(): string {
+    const obj = this.p();
+    const v = obj ? obj['content'] : undefined;
+    return typeof v === 'string' ? v : '';
+  }
+
+  onContentAnalyzed(meta: { title?: string; description?: string; headings?: string[] }) {
+    const currentType = this.type();
+    if (currentType === 'page' || currentType === 'homepage') {
+      const p = this.payload() as PagePayload | undefined;
+      if (p && (!p.excerpt || !p.excerpt.trim())) {
+        this.seo.set({ title: p.title || meta.title || 'Página', description: meta.description });
+      }
+    } else if (currentType === 'post') {
+      const p = this.payload() as PostPayload | undefined;
+      if (p && (!p.excerpt || !p.excerpt.trim())) {
+        this.seo.set({ title: p.title || meta.title || 'Post', description: meta.description, type: 'article' });
+      }
+    }
+  }
+
+  private endLoadingWithMinDelay() {
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const elapsed = Math.max(0, now - this.fetchStart);
+    const remaining = Math.max(0, this.minSkeletonMs - elapsed);
+    if (remaining > 0) {
+      setTimeout(() => this.loading.set(false), remaining);
+    } else {
+      this.loading.set(false);
+    }
   }
 }

@@ -1,0 +1,79 @@
+    <!-- Articles Grid/List Section -->
+  <section class="py-12 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Loading first page -->
+      @if (loading()  && !posts().length) {
+        <div class="text-sm text-text-secondary mb-6">Cargando posts…</div>
+      }
+
+      <!-- Articles Container -->
+      @if (!loading()) {
+        <div id="articles-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+           @for (post of posts(); track post.id) {
+            <article class="article-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300 group shadow-sm dark:shadow-none" >
+              <div class="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 overflow-hidden">
+                <app-post-image
+                  [src]="post.featuredImage"
+                  [alt]="post.title || 'Imagen del artículo'"
+                ></app-post-image>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                <div class="absolute top-4 left-4" *ngIf="post.categories?.length">
+                  <span class="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">{{ post.categories?.[0]?.name }}</span>
+                </div>
+              </div>
+
+              <div class="p-6">
+                <div class="flex items-center space-x-3 mb-3" *ngIf="post.author || post.publishedAt">
+                  @if (post.author) {
+                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+                      {{ getAuthorInitials(post.author.name) }}
+                    </div>
+                  } @else {
+                    <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+                  }
+                  <div class="text-sm">
+                    @if (post.author) { <span class="font-medium text-gray-900 dark:text-white">{{ post.author.name }}</span> }
+                    @if (post.publishedAt) { <span class="text-gray-500 dark:text-gray-400 ml-2">{{ post.publishedAt | date:'mediumDate' }}</span> }
+                  </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  <a [routerLink]="buildPostLink(post)">{{ post.title }}</a>
+                </h3>
+
+                <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">
+                  {{ getExcerpt(post) }}
+                </p>
+
+                @if (post.tags?.length) {
+                  <div class="flex flex-wrap gap-2 mb-4">
+                    @for (t of post.tags; track t.id) {
+                      <a [routerLink]="['/', t.slug]"
+                         class="bg-pink-100 text-pink-700 px-2 py-1 rounded text-xs hover:bg-gray-200 dark:hover:bg-gray-600">{{ t.name }}</a>
+                    }
+                  </div>
+                }
+
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                    @if (post.readingTime) {
+                      <span class="flex items-center space-x-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>{{ post.readingTime }} min lectura</span>
+                      </span>
+                    }
+                  </div>
+                  @if (isNew(post)) {
+                    <span class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1 rounded-full text-xs font-medium">Nuevo</span>
+                  }
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+
+    </div>
+  </section>
