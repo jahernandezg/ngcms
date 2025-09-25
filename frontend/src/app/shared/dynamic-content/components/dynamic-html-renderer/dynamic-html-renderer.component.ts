@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, Output, EventEmitter, SimpleChanges, Type, ViewChild, ViewContainerRef, EnvironmentInjector, inject } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ComponentRegistryService } from '../../services/component-registry.service';
 import { ComponentValidatorService } from '../../services/component-validator.service';
 import { DynamicHtmlService } from '../../services/dynamic-html.service';
@@ -9,7 +10,7 @@ import { DynamicHtmlService } from '../../services/dynamic-html.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-  <div #root [innerHTML]="processedHtml"></div>
+  <div #root [innerHTML]="processedSafeHtml"></div>
   `,
 })
 export class DynamicHtmlRendererComponent implements AfterViewInit, OnChanges, OnDestroy {
@@ -18,6 +19,7 @@ export class DynamicHtmlRendererComponent implements AfterViewInit, OnChanges, O
   private parser = inject(DynamicHtmlService);
   private envInjector = inject(EnvironmentInjector);
   private vcRef = inject(ViewContainerRef);
+  private sanitizer = inject(DomSanitizer);
   @ViewChild('root', { static: true }) rootRef!: ElementRef<HTMLDivElement>;
 
   @Input() htmlContent: string | null | undefined;
@@ -26,6 +28,7 @@ export class DynamicHtmlRendererComponent implements AfterViewInit, OnChanges, O
 
   private createdComponents: Array<{ host: Element; destroy: () => void }> = [];
   processedHtml = '';
+  processedSafeHtml: SafeHtml = '';
   private markerMap = new Map<string, { name: string; params?: Record<string, unknown> }>();
   private markerOrder: string[] = [];
 
@@ -104,7 +107,9 @@ export class DynamicHtmlRendererComponent implements AfterViewInit, OnChanges, O
       this.markerMap.set(id, { name, params });
       this.markerOrder.push(id);
     });
-    this.processedHtml = container.innerHTML;
+  this.processedHtml = container.innerHTML;
+  // Convertir a SafeHtml para permitir formularios/inputs/botones sin que el sanitizer los elimine
+  this.processedSafeHtml = this.sanitizer.bypassSecurityTrustHtml(this.processedHtml);
     // Extraer metadatos básicos para SEO: primer h1/h2 y primeras ~160 palabras sin etiquetas
     try {
       const tmp = document.createElement('div');
