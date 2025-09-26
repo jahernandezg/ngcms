@@ -5,9 +5,12 @@
 // Así puedes mantener una config distinta por cada instancia sin recompilar.
 window.__env = {
   // Base del backend sin slash final. El interceptor derivará /api y /uploads.
-  // Ejemplo producción:
-  // API_BASE: 'https://api.tublog.com',
+  // Producción (ejemplo real del proyecto):
+  // API_BASE: 'https://api.tsinit.com',
 
   // Alternativa: URL completa de la API (termina en /api). El interceptor derivará la base quitando /api.
-  // API_URL: 'https://api.tublog.com/api',
+  // API_URL: 'https://api.tsinit.com/api',
+
+  // URL pública del sitio (para construir canonical y og:url en cliente)
+  // SITE_URL: 'https://tsinit.com'
 };

@@ -154,6 +154,32 @@ export class DynamicHtmlRendererComponent implements AfterViewInit, OnChanges, O
     const tryMount = () => {
       try {
         this.cleanup();
+        // Delegación de eventos para manejar anclas internas (#id)
+        // Evita que el router SPA intercepte y navegue a home cuando el href es "/#id" o "#id"
+        root.addEventListener('click', (ev: Event) => {
+          const t = ev.target as HTMLElement | null;
+          if (!t) return;
+          const a = t.closest('a') as HTMLAnchorElement | null;
+          if (!a) return;
+          const href = a.getAttribute('href') || '';
+          // Normaliza href como "#id" si viene como "/#id"
+          const match = href.match(/^\/?#(.+)$/);
+          if (match) {
+            ev.preventDefault();
+            const id = decodeURIComponent(match[1]);
+            // Intenta encontrar elemento con id
+            const target = document.getElementById(id);
+            if (target) {
+              try { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch { target.scrollIntoView(); }
+              // Actualiza hash sin recargar ni disparar navegación SPA
+              if (typeof history !== 'undefined' && history.replaceState) {
+                const newHash = '#' + id;
+                const baseUrl = window.location.href.split('#')[0];
+                history.replaceState(null, '', baseUrl + newHash);
+              }
+            }
+          }
+        }, { passive: false });
         // Preferir el mapa preprocesado con IDs estables
         if (this.markerMap.size > 0) {
           const hosts = Array.from(root.querySelectorAll('.dc-marker')) as Element[];

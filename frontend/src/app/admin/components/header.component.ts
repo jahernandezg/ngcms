@@ -1,6 +1,7 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminAuthService } from '../services/admin-auth.service';
+import { buildAssetUrl } from '../../shared/asset-url.util';
 
 @Component({
   standalone: true,
@@ -48,7 +49,8 @@ export class AdminHeaderComponent {
         const payload = this.decodeJwt(token) as JwtPayload;
         this.userName = payload?.name || payload?.given_name || '';
         this.userEmail = payload?.email || '';
-        this.userAvatarUrl = payload?.avatarUrl || payload?.picture || null;
+  const raw = (payload?.avatarUrl || payload?.picture) as string | undefined;
+  this.userAvatarUrl = (buildAssetUrl(raw || null) ?? raw ?? null);
       }
     } catch { /* noop */ }
   }
@@ -60,7 +62,6 @@ export class AdminHeaderComponent {
   }
 
   onToggleSidebarClick(){
-    console.log('Toggle sidebar');
     this.toggleSidebar.emit();
   }
 

@@ -6,6 +6,7 @@ import { ToastService } from '../components/toast-container.component';
 import { LoadingDirective } from '../directives/loading.directive';
 import { AlertComponent } from '../components/alert.component';
 import { SiteSettingsService } from '../../shared/site-settings.service';
+import { buildAssetUrl } from '../../shared/asset-url.util';
 
 @Component({
     standalone: true,
@@ -59,11 +60,13 @@ export class LoginComponent {
         // Branding logos dinámicos
         logoLight() {
             const s = this.siteSettings.settings();
-            return s?.logoLight || s?.logoUrl || '/placeholders/logo-light.svg';
+            const raw = s?.logoLight || s?.logoUrl || '/placeholders/logo-light.svg';
+            return buildAssetUrl(raw) || raw;
         }
         logoDark() {
             const s = this.siteSettings.settings();
-            return s?.logoDark || s?.logoUrl || '/placeholders/logo-dark.svg';
+            const raw = s?.logoDark || s?.logoUrl || '/placeholders/logo-dark.svg';
+            return buildAssetUrl(raw) || raw;
         }
 
         // Descripción/tagline del sitio para el texto de apoyo
