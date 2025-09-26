@@ -114,7 +114,9 @@ export class PostDetailComponent {
       const settings = this.siteSettings.settings();
   const rawImage = p.featuredImage || settings?.defaultPostImage || settings?.ogImage || undefined;
   const image = buildAssetUrl(rawImage || null) || undefined;
-  this.seo.set({ title: p.title, description: desc, type: 'article', canonical: path, image });
+  // Intentar usar la absoluteUrl ya calculada; si aún no está, el SeoService construirá con canonical
+  const abs = this.absoluteUrl();
+  this.seo.set({ title: p.title, description: desc, type: 'article', canonical: path, image, url: abs || undefined });
     });
     // Inicializar minutos restantes al cargar el post
     effect(() => {

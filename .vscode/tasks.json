@@ -32,6 +32,20 @@
 			"command": "npx nx run frontend:build",
 			"isBackground": false,
 			"group": "build"
+		},
+		{
+			"label": "build-frontend",
+			"type": "shell",
+			"command": "npx nx run frontend:build",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "build-frontend",
+			"type": "shell",
+			"command": "npx nx run frontend:build",
+			"isBackground": false,
+			"group": "build"
 		}
 	]
 }

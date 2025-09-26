@@ -9,7 +9,13 @@ export class SeoService {
   private meta = inject(Meta);
   private settingsSvc = inject(SiteSettingsService);
   private siteName = 'CMS';
-  private canonicalBase = (typeof window !== 'undefined' && (window as unknown as { SITE_URL?: string }).SITE_URL) || '';
+  private canonicalBase = (
+    // Cliente: permitir SITE_URL directo o vía window.__env.SITE_URL
+    (typeof window !== 'undefined' && ((window as unknown as { SITE_URL?: string }).SITE_URL || (window as unknown as { __env?: Record<string, string> }).__env?.['SITE_URL'])) ||
+    // SSR: variable de entorno
+    (typeof process !== 'undefined' ? (process.env?.['SITE_URL'] as string | undefined) : undefined) ||
+    ''
+  );
 
   constructor() {
     // efecto reactivo: cuando se cargan settings actualiza siteName
@@ -26,7 +32,7 @@ export class SeoService {
    * 2) settings.defaultPostImage
    * 3) settings.ogImage
    */
-  set(opts: { title?: string; description?: string; canonical?: string; type?: string; image?: string; robots?: string }) {
+  set(opts: { title?: string; description?: string; canonical?: string; type?: string; image?: string; robots?: string; url?: string }) {
     const settings = this.settingsSvc.settings();
     const baseTitle = settings?.siteName || this.siteName;
     const fullTitle = opts.title ? `${opts.title} | ${baseTitle}` : baseTitle;
@@ -50,6 +56,12 @@ export class SeoService {
       this.meta.updateTag({ property: 'og:image', content: og });
       this.meta.updateTag({ name: 'twitter:image', content: og });
     }
+    // URL absoluta (og:url, twitter:url). Si no viene url, intentar construir con canonical + SITE_URL
+    const absUrl = opts.url || (opts.canonical ? this.makeAbsolute(opts.canonical) : undefined);
+    if (absUrl) {
+      this.meta.updateTag({ property: 'og:url', content: absUrl });
+      this.meta.updateTag({ name: 'twitter:url', content: absUrl });
+    }
     // site_name
     if (baseTitle) {
       this.meta.updateTag({ property: 'og:site_name', content: baseTitle });
@@ -60,6 +72,13 @@ export class SeoService {
     if (opts.robots) {
       this.meta.updateTag({ name: 'robots', content: opts.robots });
     }
+  }
+
+  private makeAbsolute(path: string): string {
+    const base = this.canonicalBase?.replace(/\/$/, '') || '';
+    if (!path) return base;
+    if (/^https?:\/\//i.test(path)) return path;
+    return base ? `${base}${path}` : path;
   }
 
   private setCanonical(path: string) {

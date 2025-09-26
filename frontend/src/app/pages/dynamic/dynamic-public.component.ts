@@ -132,10 +132,12 @@ export class DynamicPublicComponent implements AfterViewInit{
         // SEO básico
         if (res.data.type === 'page' || res.data.type === 'homepage') {
           const p = payload as PagePayload;
-          this.seo.set({ title: p.title, description: p.excerpt || p.content?.slice(0, 160) });
+          const pathAbs = (typeof window !== 'undefined') ? window.location.href : undefined;
+          this.seo.set({ title: p.title, description: p.excerpt || p.content?.slice(0, 160), url: pathAbs });
         } else if (res.data.type === 'post') {
           const p = payload as PostPayload;
-          this.seo.set({ title: p.title, description: p.excerpt || p.content?.slice(0, 160), type: 'article' });
+          const pathAbs = (typeof window !== 'undefined') ? window.location.href : undefined;
+          this.seo.set({ title: p.title, description: p.excerpt || p.content?.slice(0, 160), type: 'article', url: pathAbs });
         } else if (res.data.type === 'not_found') {
           this.seo.set({ title: '404', description: 'Página no encontrada', robots: 'noindex, nofollow' });
         }

@@ -59,10 +59,28 @@ app.use('/**', (req, res, next) => {
       // Inyección GA4 en SSR sólo para HTML
       if (contentType.includes('text/html')) {
         const analyticsId = process.env['ANALYTICS_ID'];
+        const siteUrl = process.env['SITE_URL'];
         let html = await response.text();
         if (analyticsId && !html.includes('www.googletagmanager.com/gtag/js')) {
           const ga = `\n<script async src="https://www.googletagmanager.com/gtag/js?id=${analyticsId}"></script>\n<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config','${analyticsId}');</script>\n`;
           html = html.replace('</head>', `${ga}</head>`);
+        }
+        // Inyectar canonical si falta y disponemos de SITE_URL y un og:url absoluto que indique la ruta
+        if (siteUrl) {
+          // Exponer window.SITE_URL para el cliente (útil si env.js no existe)
+          if (!html.includes('window.SITE_URL')) {
+            const exposer = `\n<script>window.SITE_URL=${JSON.stringify(siteUrl)};</script>\n`;
+            html = html.replace('</head>', `${exposer}</head>`);
+          }
+          if (!/rel=["']canonical["']/.test(html)) {
+            // Intentar usar og:url si es absoluto y empieza por SITE_URL
+            const ogUrlMatch = html.match(/property=["']og:url["']\s+content=["']([^"']+)["']/i);
+            const ogAbs = ogUrlMatch?.[1];
+            if (ogAbs && ogAbs.startsWith(siteUrl)) {
+              const canonicalLink = `\n<link rel="canonical" href="${ogAbs}"/>\n`;
+              html = html.replace('</head>', `${canonicalLink}</head>`);
+            }
+          }
         }
         res.status(response.status);
         response.headers.forEach((v, k) => { if (k.toLowerCase() !== 'content-length') res.setHeader(k, v); });

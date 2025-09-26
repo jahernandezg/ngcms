@@ -116,8 +116,10 @@ export class BlogListComponent implements OnChanges, OnInit {
     const path = typeof window !== 'undefined'
       ? window.location.pathname
       : (this.mode === 'category' && this.categorySlug ? `/${this.categorySlug}` : '/');
+    const urlAbs = typeof window !== 'undefined' ? window.location.href : undefined;
     const fallbackTitle = this.mode === 'blog' ? 'Blog' : 'Categoría';
-    this.seo.set({ title: this.title || fallbackTitle, canonical: path });
+    const desc = this.subtitle || undefined;
+    this.seo.set({ title: this.title || fallbackTitle, description: desc, canonical: path, url: urlAbs, type: 'website' });
   }
 
   private fetchBlogPosts() {
