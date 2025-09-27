@@ -151,11 +151,25 @@ jobs:
             export DOCKER_CONFIG="$(mktemp -d)"
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER || github.actor }}" --password-stdin
 
-            # Idempotent deploy: stop old stack, pull fresh image, start
+            # Idempotent deploy: stop old stack, clean networks, pull fresh image, start
             $DC -f tools/docker/docker-compose.frontend-ssr.deploy.yml down --remove-orphans || true
+
+            # Limpieza de redes duplicadas (solo si no están en uso)
+            for id in $(docker network ls --filter name=tsinit_default -q); do
+              # Elimina redes vacías con ese nombre
+              if [ "$(docker network inspect -f '{{json .Containers}}' "$id")" = "{}" ]; then
+                echo "Eliminando red duplicada vacía $id"
+                docker network rm "$id" || true
+              else
+                echo "Red $id tiene contenedores; no se elimina"
+              fi
+            done
+            # Limpia redes huérfanas
+            docker network prune -f || true
+
             $DC -f tools/docker/docker-compose.frontend-ssr.deploy.yml pull || true
             $DC -f tools/docker/docker-compose.frontend-ssr.deploy.yml up -d
 
-            # Cleanup temporary docker config and dangling images
+            # Cleanup temporary docker config y recursos
             rm -rf "$DOCKER_CONFIG" || true
             docker image prune -f || true
