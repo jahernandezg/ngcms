@@ -1,0 +1,154 @@
+name: Deploy Frontend SSR (VPS)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+      - 'libs/**'
+      - 'tools/docker/Dockerfile.frontend-ssr.ci'
+      - 'tools/docker/docker-compose.frontend-ssr.deploy.yml'
+      - 'docker-compose.frontend-ssr.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-frontend-ssr.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend-ssr-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_FRONTEND_SSR: ${{ github.repository }}-frontend-ssr
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund --legacy-peer-deps
+
+      - name: Build Angular frontend (browser)
+        run: |
+          npm run build:frontend
+          ls -la dist/frontend || true
+          test -d dist/frontend/browser
+
+      - name: Bundle SSR server with esbuild
+        run: |
+          npx esbuild frontend/src/server.ts \
+            --bundle --platform=node --format=esm \
+            --external:@angular/ssr --external:@angular/ssr/node --external:express \
+            --outfile=dist/frontend/server/server.mjs
+          test -f dist/frontend/server/server.mjs
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push SSR image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: tools/docker/Dockerfile.frontend-ssr.ci
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND_SSR }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND_SSR }}:${{ github.sha }}
+
+      - name: Persist image tags
+        id: meta
+        run: |
+          echo "FRONTEND_SSR_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND_SSR }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure deploy path exists
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script_stop: true
+          script: |
+            mkdir -p "/home/apps/ssr-tsinit"
+
+      - name: Copy compose file to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          source: tools/docker/docker-compose.frontend-ssr.deploy.yml
+          target: /home/apps/ssr-tsinit
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          FRONTEND_SSR_IMAGE: ${{ steps.meta.outputs.FRONTEND_SSR_IMAGE }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script_stop: true
+          envs: FRONTEND_SSR_IMAGE
+          script: |
+            set -euo pipefail
+            cd /home/apps/ssr-tsinit
+
+            # Create/update .env file for compose
+            cat > .env << EOF
+            FRONTEND_SSR_IMAGE=${FRONTEND_SSR_IMAGE}
+            SSR_PORT=4000
+            SSR_SITE_URL=${{ vars.SSR_SITE_URL || 'https://ssr.tsinit.com' }}
+            SSR_API_BASE=${{ vars.SSR_API_BASE || 'https://api.tsinit.com' }}
+            SSR_ANALYTICS_ID=${{ vars.SSR_ANALYTICS_ID || '' }}
+            EOF
+
+            echo "Using image: ${FRONTEND_SSR_IMAGE}"
+
+            # Detect compose command
+            if command -v docker-compose >/dev/null 2>&1; then
+              DC="docker-compose"
+            elif docker compose version >/dev/null 2>&1; then
+              DC="docker compose"
+            else
+              echo "Error: neither 'docker-compose' nor 'docker compose' available" >&2
+              exit 1
+            fi
+
+            # Login to GHCR (pull private images)
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER || github.actor }}" --password-stdin
+
+            # Pull & up
+            $DC -f tools/docker/docker-compose.frontend-ssr.deploy.yml pull || true
+            $DC -f tools/docker/docker-compose.frontend-ssr.deploy.yml up -d
+
+            docker image prune -f || true
