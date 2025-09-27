@@ -26,6 +26,7 @@ jobs:
   build-and-deploy:
     # Static deploy to shared hosting (browser assets only)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       OPENAPI_URL: ${{ vars.OPENAPI_URL }}
     steps:
@@ -56,11 +57,24 @@ jobs:
 
       - name: Disable openapi:all during Nx codegen (CI)
         run: |
-          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.scripts=p.scripts||{};p.scripts['openapi:all']='echo openapi generation skipped in deploy-frontend';fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.scripts=p.scripts||{};p.scripts['openapi:all']='echo openapi generation handled explicitly in deploy-frontend';fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+
+      - name: Build backend (necesario para swagger.json)
+        run: |
+          npm run build:backend
+          ls -la backend || true
+
+      - name: Generar OpenAPI y tipos (explícito/verbose)
+        run: |
+          set -e
+          npm run openapi:build
+          npm run openapi:gen
+          ls -la swagger.json || true
+          ls -la libs/shared-types/src/lib/openapi-types.ts || true
 
       - name: Build Angular frontend (static)
         run: |
-          npm run build:frontend
+          npm run build:frontend --verbose
           ls -la dist/frontend || true
           test -d dist/frontend/browser
 
@@ -133,7 +147,7 @@ jobs:
 
       - name: Disable openapi:all during Nx codegen (CI)
         run: |
-          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.scripts=p.scripts||{};p.scripts['openapi:all']='echo openapi generation skipped in deploy-frontend';fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.scripts=p.scripts||{};p.scripts['openapi:all']='echo openapi generation handled explicitly in deploy-frontend';fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
       - name: Build Angular frontend (browser)
         run: |
