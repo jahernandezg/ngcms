@@ -149,11 +149,15 @@ jobs:
         run: |
           node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.scripts=p.scripts||{};p.scripts['openapi:all']='echo openapi generation handled explicitly in deploy-frontend';fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
 
-      - name: Build Angular frontend (browser)
+      - name: Build Angular frontend (SSR)
         run: |
-          npm run build:frontend
+          npm run build:frontend:ssr
+          echo 'Contenido dist/frontend:'
           ls -la dist/frontend || true
+          echo 'Listando dist/frontend/server:'
+          ls -la dist/frontend/server || true
           test -d dist/frontend/browser
+          test -f dist/frontend/server/server.mjs || (echo 'Falta server.mjs (SSR)'; exit 1)
 
       - name: Create env.js (runtime config) into browser build
         shell: bash
@@ -167,13 +171,15 @@ jobs:
           };
           EOF
 
-      - name: Bundle SSR server with esbuild
+      - name: Create host.mjs (Express wrapper)
         run: |
-          npx esbuild frontend/src/server.ts \
-            --bundle --platform=node --format=esm \
-            --external:@angular/ssr --external:@angular/ssr/node --external:express \
-            --outfile=dist/frontend/server/server.mjs
-          test -f dist/frontend/server/server.mjs
+          set -e
+          cat > dist/frontend/server/host.mjs <<'JS'
+          import './server.mjs';
+          // server.mjs proviene del build Angular SSR (main.server.ts). Si se requiere lógica
+          // extra (headers, middlewares), integrar allí o usar server.ts adaptado.
+          JS
+          ls -l dist/frontend/server/host.mjs
 
       - name: Prepare SSR runtime files (app.js, package.json)
         shell: bash
@@ -183,9 +189,10 @@ jobs:
           mkdir -p ssr_bundle/dist/frontend/browser
           cp -r dist/frontend/browser/* ssr_bundle/dist/frontend/browser/
           cp dist/frontend/server/server.mjs ssr_bundle/dist/frontend/server/server.mjs
+          cp dist/frontend/server/host.mjs ssr_bundle/dist/frontend/server/host.mjs
           # Startup file expected by cPanel Passenger
           cat > ssr_bundle/app.js << 'JS'
-          (async () => { await import('./dist/frontend/server/server.mjs'); })();
+          (async () => { await import('./dist/frontend/server/host.mjs'); })();
           JS
           # Minimal runtime package.json (dependencies resolved by cPanel NPM install)
           cat > ssr_bundle/package.json << 'JSON'
