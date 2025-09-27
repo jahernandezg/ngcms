@@ -7,7 +7,7 @@ on:
       - 'frontend/**'
       - 'libs/**'
       - 'tools/docker/Dockerfile.frontend-ssr.ci'
-      - 'docker-compose.frontend-ssr.deploy.yml'
+      - 'tools/docker/docker-compose.frontend-ssr.deploy.yml'
       - 'docker-compose.frontend-ssr.yml'
       - 'package.json'
       - 'package-lock.json'
@@ -96,7 +96,7 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           script_stop: true
           script: |
-            mkdir -p "/home/apps/ssr-tsinit"
+            mkdir -p "/home/apps/ssr-tsinit/tools/docker"
 
       - name: Copy compose file to server
         uses: appleboy/scp-action@v0.1.7
@@ -105,8 +105,8 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
-          source: docker-compose.frontend-ssr.deploy.yml
-          target: /home/apps/ssr-tsinit
+          source: tools/docker/docker-compose.frontend-ssr.deploy.yml
+          target: /home/apps/ssr-tsinit/tools/docker/
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -122,6 +122,7 @@ jobs:
           script: |
             set -euo pipefail
             cd /home/apps/ssr-tsinit
+            
             # Create/update .env file for compose
             cat > .env << EOF
             FRONTEND_SSR_IMAGE=${FRONTEND_SSR_IMAGE}
@@ -133,6 +134,9 @@ jobs:
 
             echo "Using image: ${FRONTEND_SSR_IMAGE}"
 
+            # Ensure unique project name to avoid ambiguous network conflicts
+            export COMPOSE_PROJECT_NAME="tsinit-frontend-ssr"
+
             # Detect compose command
             if command -v docker-compose >/dev/null 2>&1; then
               DC="docker-compose"
@@ -142,20 +146,29 @@ jobs:
               echo "Error: neither 'docker-compose' nor 'docker compose' available" >&2
               exit 1
             fi
-
-            # Use a unique project name for SSR to avoid network collisions
-            export COMPOSE_PROJECT_NAME="tsinit-frontend-ssr"
-
-            # Use temporary docker config for GHCR login (avoid persisting credentials)
-            export DOCKER_CONFIG="/tmp/docker-config-frontend-ssr-$$"
-            mkdir -p "$DOCKER_CONFIG"
-
+            # Use a temporary Docker config for GHCR auth (avoid persisting credentials)
+            export DOCKER_CONFIG="$(mktemp -d)"
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER || github.actor }}" --password-stdin
 
-            # Idempotent cleanup of previous SSR stack (if any), then deploy
-            $DC -p "$COMPOSE_PROJECT_NAME" -f tools/docker/docker-compose.frontend-ssr.deploy.yml down --remove-orphans || true
-            $DC -p "$COMPOSE_PROJECT_NAME" -f tools/docker/docker-compose.frontend-ssr.deploy.yml pull || true
-            $DC -p "$COMPOSE_PROJECT_NAME" -f tools/docker/docker-compose.frontend-ssr.deploy.yml up -d
+            # Idempotent deploy: stop old stack, clean networks, pull fresh image, start
+            $DC -f tools/docker/docker-compose.frontend-ssr.deploy.yml down --remove-orphans || true
 
-            docker image prune -f || true
+            # Limpieza de redes duplicadas (solo si no están en uso)
+            for id in $(docker network ls --filter name=tsinit_default -q); do
+              # Elimina redes vacías con ese nombre
+              if [ "$(docker network inspect -f '{{json .Containers}}' "$id")" = "{}" ]; then
+                echo "Eliminando red duplicada vacía $id"
+                docker network rm "$id" || true
+              else
+                echo "Red $id tiene contenedores; no se elimina"
+              fi
+            done
+            # Limpia redes huérfanas
+            docker network prune -f || true
+
+            $DC -f tools/docker/docker-compose.frontend-ssr.deploy.yml pull || true
+            $DC -f tools/docker/docker-compose.frontend-ssr.deploy.yml up -d
+
+            # Cleanup temporary docker config y recursos
             rm -rf "$DOCKER_CONFIG" || true
+            docker image prune -f || true
