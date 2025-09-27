@@ -11,8 +11,11 @@
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/frontend",
-  "browser": "frontend/src/main.ts",
-  "server": "frontend/src/main.server.ts",
+        "browser": "frontend/src/main.ts",
+        "server": "frontend/src/main.server.ts",
+        "ssr": {
+          "entry": "frontend/src/main.server.ts"
+        },
         "polyfills": ["zone.js"],
         "tsConfig": "frontend/tsconfig.app.json",
   "assets": [
