@@ -7,7 +7,7 @@ on:
       - 'frontend/**'
       - 'libs/**'
       - 'tools/docker/Dockerfile.frontend-ssr.ci'
-      - 'tools/docker/docker-compose.frontend-ssr.deploy.yml'
+      - 'docker-compose.frontend-ssr.deploy.yml'
       - 'docker-compose.frontend-ssr.yml'
       - 'package.json'
       - 'package-lock.json'
@@ -105,7 +105,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
-          source: tools/docker/docker-compose.frontend-ssr.deploy.yml
+          source: docker-compose.frontend-ssr.deploy.yml
           target: /home/apps/ssr-tsinit
 
       - name: Deploy via SSH
@@ -148,7 +148,7 @@ jobs:
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER || github.actor }}" --password-stdin
 
             # Pull & up
-            $DC -f tools/docker/docker-compose.frontend-ssr.deploy.yml pull || true
-            $DC -f tools/docker/docker-compose.frontend-ssr.deploy.yml up -d
+            $DC -f docker-compose.frontend-ssr.deploy.yml pull || true
+            $DC -f docker-compose.frontend-ssr.deploy.yml up -d
 
             docker image prune -f || true
