@@ -122,7 +122,6 @@ jobs:
           script: |
             set -euo pipefail
             cd /home/apps/ssr-tsinit
-
             # Create/update .env file for compose
             cat > .env << EOF
             FRONTEND_SSR_IMAGE=${FRONTEND_SSR_IMAGE}
@@ -144,11 +143,19 @@ jobs:
               exit 1
             fi
 
-            # Login to GHCR (pull private images)
+            # Use a unique project name for SSR to avoid network collisions
+            export COMPOSE_PROJECT_NAME="tsinit-frontend-ssr"
+
+            # Use temporary docker config for GHCR login (avoid persisting credentials)
+            export DOCKER_CONFIG="/tmp/docker-config-frontend-ssr-$$"
+            mkdir -p "$DOCKER_CONFIG"
+
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER || github.actor }}" --password-stdin
 
-            # Pull & up
-            $DC -f docker-compose.frontend-ssr.deploy.yml pull || true
-            $DC -f docker-compose.frontend-ssr.deploy.yml up -d
+            # Idempotent cleanup of previous SSR stack (if any), then deploy
+            $DC -p "$COMPOSE_PROJECT_NAME" -f tools/docker/docker-compose.frontend-ssr.deploy.yml down --remove-orphans || true
+            $DC -p "$COMPOSE_PROJECT_NAME" -f tools/docker/docker-compose.frontend-ssr.deploy.yml pull || true
+            $DC -p "$COMPOSE_PROJECT_NAME" -f tools/docker/docker-compose.frontend-ssr.deploy.yml up -d
 
             docker image prune -f || true
+            rm -rf "$DOCKER_CONFIG" || true
