@@ -87,7 +87,7 @@ jobs:
           script: |
             mkdir -p "${{ secrets.DEPLOY_PATH }}"
 
-      - name: Copy compose to server
+      - name: Copy backend compose to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -95,7 +95,7 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           source: |
-            docker-compose.deploy.yml
+            docker-compose.backend.deploy.yml
           target: ${{ secrets.DEPLOY_PATH }}
 
       - name: Deploy via SSH
@@ -129,6 +129,12 @@ jobs:
             # Definir la imagen de backend para sustitución de variables en compose
             export BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${{ github.sha }}
 
+            # Archivo compose backend-only
+            COMPOSE_FILE=docker-compose.backend.deploy.yml
+
+            # Forzar nombre de proyecto para evitar redes ambiguas (tsinit_default duplicadas)
+            export COMPOSE_PROJECT_NAME=tsinit
+
             # Detectar comando compose disponible
             if command -v docker-compose >/dev/null 2>&1; then
               DC="docker-compose"
@@ -140,20 +146,23 @@ jobs:
             fi
 
             # Pull de servicios necesarios
-            $DC -f docker-compose.deploy.yml pull db backend || true
+            $DC -f $COMPOSE_FILE pull db backend || true
 
             # DB primero
-            $DC -f docker-compose.deploy.yml up -d db
+            # Limpiar redes antiguas ambiguas antes de subir
+            for net in $(docker network ls --format '{{.Name}}' | grep '^tsinit_default$' || true); do
+              echo "Eliminando red antigua $net"; docker network rm "$net" || true; done
+            $DC -f $COMPOSE_FILE up -d db
             echo "Esperando DB saludable..."
-            for i in $(seq 1 60); do
-              if $DC -f docker-compose.deploy.yml exec -T db pg_isready -U ${POSTGRES_USER:-postgres} ; then echo "DB lista"; break; fi; sleep 2; done
+            for i in $(seq 1 90); do
+              if $DC -f $COMPOSE_FILE exec -T db pg_isready -U ${POSTGRES_USER:-postgres} ; then echo "DB lista"; break; fi; sleep 2; done
 
             # Migraciones y seed opcional usando Prisma (evitar dependencia de psql/tabla exacta)
             echo "Prisma migrate deploy..."
-            BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
+            BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f $COMPOSE_FILE run --rm backend npx prisma migrate deploy --schema=/app/prisma/schema.prisma
 
             echo "Verificando necesidad de seed (Prisma)..."
-            NEED_SEED=$($DC -f docker-compose.deploy.yml run --rm -e NODE_ENV=production backend node -e '
+            NEED_SEED=$($DC -f $COMPOSE_FILE run --rm -e NODE_ENV=production backend node -e '
               const { PrismaClient } = require("@prisma/client");
               const p = new PrismaClient();
               (async () => {
@@ -170,11 +179,39 @@ jobs:
             echo "NEED_SEED=$NEED_SEED"
             if [ "$NEED_SEED" = "yes" ]; then
               echo "Prisma db seed..."
-              BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma || { echo "Seed falló" >&2; exit 1; }
+              BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f $COMPOSE_FILE run --rm backend npx prisma db seed --schema=/app/prisma/schema.prisma || { echo "Seed falló" >&2; exit 1; }
             else
               echo "Seed no necesario."
             fi
 
             # Levantar/actualizar backend solamente
-            BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f docker-compose.deploy.yml up -d db backend
+            BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f $COMPOSE_FILE up -d db backend
             docker image prune -f || true
+
+            echo "Verificando health del backend..."
+            HEALTH_OK=false
+            for i in $(seq 1 30); do
+              if curl -fsS http://localhost:3000/api/health > /dev/null; then
+                echo "Health OK en intento $i"; HEALTH_OK=true; break; fi
+              sleep 2
+            done
+
+            if [ "$HEALTH_OK" = false ]; then
+              echo "[ERROR] Backend no saludable tras despliegue. Obteniendo logs..." >&2
+              $DC -f $COMPOSE_FILE logs --tail=200 backend || true
+              echo "Intentando rollback a imagen :latest" >&2
+              ROLLBACK_IMAGE=${BACKEND_IMAGE%:*}:latest
+              export BACKEND_IMAGE="$ROLLBACK_IMAGE"
+              BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f $COMPOSE_FILE pull backend || true
+              BACKEND_IMAGE="$BACKEND_IMAGE" $DC -f $COMPOSE_FILE up -d backend
+              echo "Reverificando health tras rollback..."
+              for i in $(seq 1 30); do
+                if curl -fsS http://localhost:3000/api/health > /dev/null; then
+                  echo "Rollback exitoso, backend estable con :latest"; exit 0; fi
+                sleep 2
+              done
+              echo "[FATAL] Backend sigue sin responder tras rollback" >&2
+              exit 1
+            fi
+
+            echo "Despliegue backend completado con éxito (health OK)."

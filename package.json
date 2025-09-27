@@ -5,6 +5,8 @@
   "scripts": {
     "start:frontend": "nx serve frontend",
     "build:frontend": "nx build frontend",
+  "build:frontend:ssr": "nx build frontend --configuration=production",
+  "serve:frontend:ssr": "node dist/frontend/server/server.mjs",
     "start:backend": "nx serve backend",
     "start:backend:ps": "nx run backend:serve-winps",
     "build:backend": "nx build backend",
