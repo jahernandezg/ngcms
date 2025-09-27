@@ -1,0 +1,57 @@
+# Multi-stage Dockerfile to build and run Angular SSR (frontend only)
+# Builder stage: compile browser build and bundle SSR server
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Some builds need basic build tools and libc compatibility
+RUN apk add --no-cache python3 make g++ libc6-compat
+
+# Copy minimal workspace files and dependencies
+COPY package.json package-lock.json nx.json tsconfig.base.json ./
+COPY frontend ./frontend
+COPY libs ./libs
+
+# Install deps without running postinstall scripts (skip prisma, etc.)
+RUN npm ci --no-audit --no-fund --legacy-peer-deps --ignore-scripts
+
+# Build browser artifacts
+RUN npm run build:frontend
+
+# Bundle SSR server from frontend/src/server.ts to dist/frontend/server/server.mjs
+# Mark some deps as external (provided at runtime)
+RUN npx esbuild frontend/src/server.ts \
+  --bundle --platform=node --format=esm \
+  --external:@angular/ssr --external:@angular/ssr/node --external:express \
+  --outfile=dist/frontend/server/server.mjs
+
+# Runtime stage: minimal Node image with only runtime deps and built artifacts
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Copy built artifacts
+COPY --from=builder /app/dist/frontend/browser ./dist/frontend/browser
+COPY --from=builder /app/dist/frontend/server/server.mjs ./dist/frontend/server/server.mjs
+
+# Provide minimal runtime package.json and install only runtime deps
+# (keeps image small and avoids full monorepo deps)
+COPY <<'JSON' package.json
+{
+  "name": "frontend-ssr-runtime",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@angular/ssr": "~20.1.0",
+    "express": "^4.21.2"
+  }
+}
+JSON
+
+RUN npm install --no-audit --no-fund
+
+# Environment defaults
+ENV PORT=4000
+EXPOSE 4000
+
+# Start SSR server (server.mjs enables listener when run as main)
+CMD ["node", "dist/frontend/server/server.mjs"]

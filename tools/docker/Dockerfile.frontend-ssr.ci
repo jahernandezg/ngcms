@@ -1,0 +1,26 @@
+# CI-focused Dockerfile: produces a runtime image only (assumes build done separately via esbuild)
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Runtime deps only
+COPY <<'JSON' package.json
+{
+  "name": "frontend-ssr-runtime",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@angular/ssr": "~20.1.0",
+    "express": "^4.21.2"
+  }
+}
+JSON
+
+RUN npm install --no-audit --no-fund
+
+# Copy prebuilt artifacts from CI workspace
+COPY dist/frontend/browser ./dist/frontend/browser
+COPY dist/frontend/server/server.mjs ./dist/frontend/server/server.mjs
+
+EXPOSE 4000
+CMD ["node", "dist/frontend/server/server.mjs"]

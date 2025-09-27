@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  frontend-ssr:
+    container_name: frontend-ssr
+    build:
+      context: .
+      dockerfile: tools/docker/Dockerfile.frontend-ssr
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # Set to your public site URL for absolute OG/canonical URLs
+      SITE_URL: https://ssr.tsinit.com
+      # API base URL (no trailing slash). Use API_URL if your backend exposes /api
+      API_BASE: https://api.tsinit.com
+      # Optional analytics
+      # ANALYTICS_ID: G-XXXXXXX
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000').then(r=>{if(r.ok)process.exit(0);process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    # If you prefer to mount a local env.js into browser build at runtime, add a volume here.
+
+# Deployment target path on VPS (for reference): /home/apps/ssr-tsinit
+# Steps on VPS:
+#   1) docker compose -f docker-compose.frontend-ssr.yml build
+#   2) docker compose -f docker-compose.frontend-ssr.yml up -d
+#   3) Ensure Nginx proxy points to 127.0.0.1:4000 (see nginx/ssr.tsinit.com.conf)
