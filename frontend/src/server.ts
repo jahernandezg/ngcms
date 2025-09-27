@@ -61,6 +61,45 @@ app.use('/**', (req, res, next) => {
         const analyticsId = process.env['ANALYTICS_ID'];
         const siteUrl = process.env['SITE_URL'];
         let html = await response.text();
+        // Build base URL from headers (supports proxies) and absolute URL for this request
+        const xfProto = req.get('x-forwarded-proto');
+        const xfHost = req.get('x-forwarded-host');
+        const protocol = (xfProto || req.protocol || 'https').split(',')[0];
+        const host = (xfHost || req.get('host') || '').split(',')[0];
+        const baseUrl = host ? `${protocol}://${host}` : '';
+        const absUrl = baseUrl ? `${baseUrl}${req.originalUrl}` : req.originalUrl;
+        // Ensure minimal social sharing meta for crawlers (LinkedIn/Twitter) on SSR output
+        // 1) og:url absolute for current page
+        if (!/property=["']og:url["']/i.test(html) && absUrl) {
+          html = html.replace('</head>', `\n<meta property="og:url" content="${absUrl}"/>\n</head>`);
+        }
+        // 2) og:title from <title> or fallback
+        if (!/property=["']og:title["']/i.test(html)) {
+          const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+          const ogTitle = (titleMatch?.[1] || 'TSInit').trim();
+          html = html.replace('</head>', `\n<meta property="og:title" content="${ogTitle}"/>\n<meta name="twitter:title" content="${ogTitle}"/>\n</head>`);
+        }
+        // 3) description from meta[name=description] or fallback
+        if (!/property=["']og:description["']/i.test(html)) {
+          const descMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']*)["'][^>]*>/i);
+          const desc = (descMatch?.[1] || 'Artículos sobre Angular, NestJS, Nx y más.').trim();
+          html = html.replace('</head>', `\n<meta property="og:description" content="${desc}"/>\n<meta name="twitter:description" content="${desc}"/>\n</head>`);
+        }
+        // 4) Ensure twitter:card
+        if (!/name=["']twitter:card["']/i.test(html)) {
+          html = html.replace('</head>', `\n<meta name="twitter:card" content="summary_large_image"/>\n</head>`);
+        }
+        // 5) og:image absolute - prefix baseUrl if relative, or add default
+        const hasOgImage = /<meta\s+property=["']og:image["'][^>]*>/i.test(html);
+        if (hasOgImage) {
+          // prefix relative og:image with baseUrl
+          html = html.replace(/(<meta\s+property=["']og:image["']\s+content=["'])(\/[^"]+)(["'][^>]*>)/i, `$1${baseUrl}$2$3`);
+          // do the same for twitter:image if present
+          html = html.replace(/(<meta\s+name=["']twitter:image["']\s+content=["'])(\/[^"]+)(["'][^>]*>)/i, `$1${baseUrl}$2$3`);
+        } else {
+          const defaultImg = baseUrl ? `${baseUrl}/main-product.png` : '/main-product.png';
+          html = html.replace('</head>', `\n<meta property="og:image" content="${defaultImg}"/>\n<meta name="twitter:image" content="${defaultImg}"/>\n</head>`);
+        }
         if (analyticsId && !html.includes('www.googletagmanager.com/gtag/js')) {
           const ga = `\n<script async src="https://www.googletagmanager.com/gtag/js?id=${analyticsId}"></script>\n<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config','${analyticsId}');</script>\n`;
           html = html.replace('</head>', `${ga}</head>`);
@@ -81,6 +120,11 @@ app.use('/**', (req, res, next) => {
               html = html.replace('</head>', `${canonicalLink}</head>`);
             }
           }
+        }
+        // Also add canonical if still missing using absUrl
+        if (!/rel=["']canonical["']/i.test(html) && typeof absUrl !== 'undefined' && absUrl) {
+          const canonicalLink = `\n<link rel="canonical" href="${absUrl}"/>\n`;
+          html = html.replace('</head>', `${canonicalLink}</head>`);
         }
         res.status(response.status);
         response.headers.forEach((v, k) => { if (k.toLowerCase() !== 'content-length') res.setHeader(k, v); });
