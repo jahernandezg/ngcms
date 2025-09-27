@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  frontend-ssr:
+    image: ${FRONTEND_SSR_IMAGE}
+    container_name: frontend-ssr
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: ${SSR_PORT:-4000}
+      SITE_URL: ${SSR_SITE_URL}
+      API_BASE: ${SSR_API_BASE}
+      ANALYTICS_ID: ${SSR_ANALYTICS_ID:-}
+    ports:
+      - "${SSR_PORT:-4000}:4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:${SSR_PORT:-4000}').then(r=>{if(r.ok)process.exit(0);process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
